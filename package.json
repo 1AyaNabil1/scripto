@@ -1,0 +1,26 @@
+{
+  "name": "scripto",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Storyboard Weaver - Edge-first modular monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:server": "cd apps/server && source .venv/bin/activate && func start",
+    "dev": "npm-run-all --parallel dev:*",
+    "build:web": "npm run build --workspace=apps/web",
+    "build": "npm run build:web",
+    "lint": "npm run lint --workspace=apps/web",
+    "clean": "rm -rf apps/*/node_modules apps/*/.venv packages/*/node_modules node_modules"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

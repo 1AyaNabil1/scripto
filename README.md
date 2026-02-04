@@ -1,7 +1,7 @@
-# 🎨 Vloomeo
+# 🎨 Scripto
 
 <p align="center">
-  <img src="https://placehold.co/600x300/000000/FFFFFF/png?text=Vloomeo" alt="Vloomeo Banner">
+  <img src="https://placehold.co/600x300/000000/FFFFFF/png?text=Scripto" alt="Scripto Banner">
 </p>
 
 <p align="center">
@@ -9,18 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kershrita/vloomeo/blob/main/LICENSE.txt">
+  <a href="https://github.com/kershrita/Scripto/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
-  <a href="https://github.com/kershrita/vloomeo/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/kershrita/vloomeo/main.yml?branch=main" alt="CI/CD Status">
+  <a href="https://github.com/kershrita/Scripto/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/kershrita/Scripto/main.yml?branch=main" alt="CI/CD Status">
   </a>
-  <a href="https://github.com/kershrita/vloomeo/issues">
-    <img src="https://img.shields.io/github/issues/kershrita/vloomeo" alt="Issues">
+  <a href="https://github.com/kershrita/Scripto/issues">
+    <img src="https://img.shields.io/github/issues/kershrita/Scripto" alt="Issues">
   </a>
 </p>
 
-**Vloomeo** is a full-stack application designed to transform written stories into visual storyboards. It leverages generative AI to create scene descriptions, dialogue, and corresponding images, providing a seamless experience for writers, filmmakers, and creators.
+**Scripto** is a full-stack application designed to transform written stories into visual storyboards. It leverages generative AI to create scene descriptions, dialogue, and corresponding images, providing a seamless experience for writers, filmmakers, and creators.
 
 ## ✨ Features
 
@@ -56,7 +56,7 @@ For detailed information about each component, please refer to their respective 
 
 ## 🚀 Getting Started
 
-To get started with Vloomeo, you'll need to set up both the frontend and backend services.
+To get started with Scripto, you'll need to set up both the frontend and backend services.
 
 ### Prerequisites
 

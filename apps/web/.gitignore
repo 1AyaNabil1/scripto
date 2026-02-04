@@ -22,30 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-.env
-.env.local
-local.settings.json
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-ENV/
-env/
-.ipynb_checkpoints
-
-# Azure Functions
-.azure/
-bin/
-obj/
-.funcignore
-
-# Build outputs
-apps/*/dist/
-apps/*/build/
-packages/*/dist/

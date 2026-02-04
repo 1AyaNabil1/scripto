@@ -1,0 +1,7 @@
+azure-functions
+requests
+azure-ai-inference
+mysql-connector-python
+PyJWT
+bcrypt
+azure-storage-blob

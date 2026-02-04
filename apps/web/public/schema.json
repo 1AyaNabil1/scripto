@@ -1,0 +1,71 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://Scripto.ashraf.zone/#organization",
+      "name": "Scripto",
+      "alternateName": "Scripto AI Storytelling Platform",
+      "url": "https://Scripto.ashraf.zone",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://Scripto.ashraf.zone/icon.ico",
+        "width": 512,
+        "height": 512
+      },
+      "description": "AI-powered visual storytelling platform that transforms text into stunning storyboards",
+      "foundingDate": "2024",
+      "sameAs": [
+        "https://Scripto.ashraf.zone"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "url": "https://Scripto.ashraf.zone/about"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://Scripto.ashraf.zone/#website",
+      "url": "https://Scripto.ashraf.zone",
+      "name": "Scripto",
+      "description": "Transform your stories into stunning visual narratives with AI",
+      "publisher": {
+        "@id": "https://Scripto.ashraf.zone/#organization"
+      },
+      "potentialAction": [
+        {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://Scripto.ashraf.zone/gallery?search={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      ]
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://Scripto.ashraf.zone/#webapp",
+      "name": "Scripto",
+      "url": "https://Scripto.ashraf.zone",
+      "description": "Create professional storyboards from text using advanced AI technology",
+      "applicationCategory": "DesignApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "featureList": [
+        "AI-powered storyboard generation",
+        "Multiple art styles",
+        "Story gallery",
+        "Export options",
+        "Community sharing"
+      ],
+      "screenshot": "https://Scripto.ashraf.zone/icon.ico"
+    }
+  ]
+}

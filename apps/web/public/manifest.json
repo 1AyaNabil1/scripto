@@ -1,0 +1,26 @@
+{
+  "name": "AI Storyboard Weaver",
+  "short_name": "Storyboard AI",
+  "description": "Create professional storyboards from text using AI. Generate visual narratives with advanced AI models, multiple art styles, and instant export options.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["design", "productivity", "entertainment"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ]
+}

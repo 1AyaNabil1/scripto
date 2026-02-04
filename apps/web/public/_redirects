@@ -1,0 +1,5 @@
+# Domain Migration from ai-storyboard-weaver.ashraf.zone to Scripto.ashraf.zone
+https://ai-storyboard-weaver.ashraf.zone/* https://Scripto.ashraf.zone/:splat 301!
+
+# SPA fallback - must be last
+/*    /index.html   200
