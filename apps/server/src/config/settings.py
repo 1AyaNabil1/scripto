@@ -47,8 +47,8 @@ class Config:
     IMAGE_QUALITY = "standard"
     
     # Model Settings
-    DEEPSEEK_MODEL_NAME = "weaver-generator"
-    DALLE_MODEL_NAME = "weaver-generator-dalle3"
+    DEEPSEEK_MODEL_NAME = "gpt-4-mini"
+    DALLE_MODEL_NAME = "dall-e-3"
     MAX_TOKENS = 2048
     TEMPERATURE = 0.8
     TOP_P = 0.1

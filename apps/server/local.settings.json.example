@@ -1,0 +1,24 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "YOUR_AZURE_STORAGE_CONNECTION_STRING",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    
+    "LLM_MODEL_ENDPOINT": "https://models.inference.ai.azure.com",
+    "LLM_MODEL_API_KEY": "YOUR_GITHUB_TOKEN_OR_AZURE_API_KEY",
+    
+    "DALLE_MODEL_ENDPOINT": "YOUR_DALLE_ENDPOINT",
+    "DALLE_MODEL_API_KEY": "YOUR_DALLE_API_KEY",
+    
+    "DB_HOST": "localhost",
+    "DB_NAME": "scripto",
+    "DB_USER": "root",
+    "DB_PASSWORD": "YOUR_MYSQL_PASSWORD",
+    "DB_PORT": "3306",
+    
+    "JWT_SECRET": "CHANGE_THIS_TO_A_SECURE_RANDOM_STRING"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

@@ -1,6 +1,6 @@
 azure-functions
 requests
-azure-ai-inference
+openai
 mysql-connector-python
 PyJWT
 bcrypt

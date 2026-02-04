@@ -6,7 +6,8 @@ import os
 import uuid
 import requests
 from io import BytesIO
-from azure.storage.blob import BlobServiceClient, ContentSettings
+from datetime import datetime, timedelta
+from azure.storage.blob import BlobServiceClient, ContentSettings, generate_blob_sas, BlobSasPermissions
 from typing import Optional
 import logging
 
@@ -22,6 +23,11 @@ class BlobStorageService:
         self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
         self.container_name = "storyboard-images"
         
+        # Extract account name and key from connection string for SAS generation
+        conn_parts = dict(item.split('=', 1) for item in connection_string.split(';') if '=' in item)
+        self.account_name = conn_parts.get('AccountName')
+        self.account_key = conn_parts.get('AccountKey')
+        
         # Ensure container exists
         self._ensure_container_exists()
     
@@ -31,11 +37,11 @@ class BlobStorageService:
             container_client = self.blob_service_client.get_container_client(self.container_name)
             container_client.get_container_properties()
         except Exception:
-            # Container doesn't exist, create it
+            # Container doesn't exist, create it without public access
             try:
                 self.blob_service_client.create_container(
-                    name=self.container_name,
-                    public_access='blob'  # Allow public read access to blobs
+                    name=self.container_name
+                    # No public_access parameter - container will be private
                 )
                 logger.info(f"Created container: {self.container_name}")
             except Exception as e:
@@ -80,10 +86,19 @@ class BlobStorageService:
                 overwrite=True
             )
             
-            # Return public URL
-            blob_url = blob_client.url
-            logger.info(f"Successfully uploaded image to: {blob_url}")
-            return blob_url
+            # Generate SAS URL for private container access (valid for 10 years)
+            sas_token = generate_blob_sas(
+                account_name=self.account_name,
+                container_name=self.container_name,
+                blob_name=file_name,
+                account_key=self.account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.utcnow() + timedelta(days=3650)  # 10 years
+            )
+            
+            blob_url_with_sas = f"{blob_client.url}?{sas_token}"
+            logger.info(f"Successfully uploaded image to: {blob_url_with_sas}")
+            return blob_url_with_sas
             
         except requests.RequestException as e:
             logger.error(f"Failed to download image from {image_url}: {e}")
