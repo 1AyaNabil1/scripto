@@ -65,21 +65,21 @@ const Footer: React.FC = () => {
             <h4 className="text-lg font-medium">Connect</h4>
             <div className="flex space-x-4">
               <a 
-                href="https://github.com/kershrita" 
+                href="https://github.com/1AyaNabil1" 
                 className="text-neutral-400 hover:text-white transition-colors duration-200"
                 aria-label="GitHub"
               >
                 <Github className="w-5 h-5" />
               </a>
               <a 
-                href="https://linkedin.com/in/ashraf-abdulkhaliq" 
+                href="https://linkedin.com/in/ayanabil11" 
                 className="text-neutral-400 hover:text-white transition-colors duration-200"
                 aria-label="LinkedIn"
               >
                 <Linkedin className="w-5 h-5" />
               </a>
               <a 
-                href="mailto:contact@ashraf.zone" 
+                href="mailto:contact@ayanexus.dev" 
                 className="text-neutral-400 hover:text-white transition-colors duration-200"
                 aria-label="Email"
               >
@@ -92,19 +92,18 @@ const Footer: React.FC = () => {
         {/* Bottom Section */}
         <div className="mt-8 pt-8 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center">
           <p className="text-neutral-400 text-xs sm:text-sm md:text-base">
-            © 2025{' '}
-            <a 
-              href="https://ashraf.zone/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-emerald-400 hover:text-emerald-300 transition-colors duration-200"
-            >
-              Ashraf.Zone
-            </a>
-            . All rights reserved.
+            © 2025 Scripto. All rights reserved.
           </p>
           <p className="text-neutral-400 text-xs sm:text-sm md:text-base flex items-center mt-2 md:mt-0">
-            Made with <Heart className="w-4 h-4 mx-1 text-red-500" /> by Ashraf Abdulkhaliq
+            Developed by{' '}
+            <a 
+              href="https://ayanexus.dev/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 transition-colors duration-200 mx-1"
+            >
+              AyaNexus 🦢
+            </a>
           </p>
         </div>
       </div>

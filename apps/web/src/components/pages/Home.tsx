@@ -42,7 +42,7 @@ const Home = () => {
         title="Scripto - AI-Powered Visual Storytelling Platform"
         description="Transform your stories into stunning visual storyboards with Scripto's advanced AI technology. Create professional storyboards, explore community galleries, and bring your creative vision to life."
         keywords="Scripto, AI storyboard generator, visual storytelling platform, AI art creation, storyboard maker, creative AI tools, digital storytelling"
-        url="https://Scripto.ashraf.zone/"
+        url="https://scripto.ayanexus.dev/"
       />
       <SiteStructuredData type="webapp" />
       

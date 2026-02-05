@@ -1,4 +1,4 @@
-# 🎨 Scripto
+# Scripto
 
 <p align="center">
   <img src="https://placehold.co/600x300/000000/FFFFFF/png?text=Scripto" alt="Scripto Banner">
@@ -9,29 +9,29 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kershrita/Scripto/blob/main/LICENSE.txt">
+  <a href="https://github.com/1AyaNabil1/scripto/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License">
   </a>
-  <a href="https://github.com/kershrita/Scripto/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/kershrita/Scripto/main.yml?branch=main" alt="CI/CD Status">
+  <a href="https://github.com/1AyaNabil1/scripto/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/1AyaNabil1/scripto/main.yml?branch=main" alt="CI/CD Status">
   </a>
-  <a href="https://github.com/kershrita/Scripto/issues">
-    <img src="https://img.shields.io/github/issues/kershrita/Scripto" alt="Issues">
+  <a href="https://github.com/1AyaNabil1/scripto/issues">
+    <img src="https://img.shields.io/github/issues/1AyaNabil1/scripto" alt="Issues">
   </a>
 </p>
 
 **Scripto** is a full-stack application designed to transform written stories into visual storyboards. It leverages generative AI to create scene descriptions, dialogue, and corresponding images, providing a seamless experience for writers, filmmakers, and creators.
 
-## ✨ Features
+## Features
 
-- **🤖 AI-Powered Storyboard Generation**: Automatically creates detailed storyboards from a simple story plot.
-- **🎭 Rich Scene Detail**: Generates scene descriptions, dialogue, and action notes.
-- **🎨 Visual Style Customization**: Allows users to define the genre, mood, and visual style (e.g., Cinematic, Anime, Noir).
-- **🖼️ Image Generation**: Utilizes a DALL-E model to generate a unique image for each scene in the storyboard.
-- **🌐 Web-Based Interface**: An intuitive and responsive user interface for submitting stories and viewing the final storyboard.
-- **🚀 Serverless Architecture**: Built with a scalable and efficient serverless backend using Azure Functions.
+- **AI-Powered Storyboard Generation**: Automatically creates detailed storyboards from a simple story plot.
+- **Rich Scene Detail**: Generates scene descriptions, dialogue, and action notes.
+- **Visual Style Customization**: Allows users to define the genre, mood, and visual style (e.g., Cinematic, Anime, Noir).
+- **Image Generation**: Utilizes a DALL-E model to generate a unique image for each scene in the storyboard.
+- **Web-Based Interface**: An intuitive and responsive user interface for submitting stories and viewing the final storyboard.
+- **Serverless Architecture**: Built with a scalable and efficient serverless backend using Azure Functions.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS
 - **Backend**: Node.js, Azure Functions
@@ -39,7 +39,7 @@
   - A GPT-based model for text and storyboard generation.
   - A DALL-E-based model for image generation.
 
-## 📂 Project Structure
+## Project Structure
 
 The application is structured as a monorepo with two main components:
 
@@ -54,7 +54,7 @@ For detailed information about each component, please refer to their respective 
 - [Frontend README](./frontend/README.md)
 - [Backend README](./backend/README.md)
 
-## 🚀 Getting Started
+## Getting Started
 
 To get started with Scripto, you'll need to set up both the frontend and backend services.
 
@@ -69,14 +69,12 @@ To get started with Scripto, you'll need to set up both the frontend and backend
 1.  **Backend Setup**: Follow the instructions in the [Backend README](./backend/README.md) to set up and run the backend service.
 2.  **Frontend Setup**: Follow the instructions in the [Frontend README](./frontend/README.md) to set up and run the frontend application.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started.
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE.txt](./LICENSE.txt) file for details.
-
 ---
 
-© 2025 Ashraf.Zone. All rights reserved.
+<div align="center">
+  <p><em>Developed by AyaNexus 🦢</em></p>
+</div>

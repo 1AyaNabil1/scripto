@@ -65,40 +65,24 @@ const About: React.FC = () => {
 
   const collaborators = [
     {
-      name: 'Aya Nabil',
-      role: 'AI/ML Engineer & Project Founder',
-      description: 'Project originator and AI architect. Conceptualized the idea in April 2025 and built the initial AI-powered storyboard generation system using local models, later transitioning to Azure AI services.',
+      name: 'AyaNexus 🦢',
+      role: 'Creator & Developer',
+      description: 'Sole creator, developer, and architect of Scripto. Responsible for all aspects of the project including ideation, design, AI/ML implementation, frontend & backend development, cloud architecture, and deployment.',
       github: 'https://github.com/1AyaNabil1',
       linkedin: 'https://www.linkedin.com/in/ayanabil11/',
+      website: 'https://ayanexus.dev/',
       avatar: 'A',
       contributions: [
-        'Project concept and initial ideation (April 2025)',
-        'Local GenAI models implementation',
-        'Initial AI logic and workflow design',
-        'Azure AI models migration planning',
-        'AI system architecture and optimization',
-        'Model performance tuning and testing',
-        'AI response processing and validation',
-        'Quality assurance for AI outputs'
-      ]
-    },
-    {
-      name: 'Ashraf Abdulkhaliq',
-      role: 'Full Stack Developer & Technical Lead',
-      description: 'Joined in May 2025 to enhance the project with Azure AI integration, later led the complete frontend development and production deployment with modern web technologies.',
-      github: 'https://github.com/kershrita',
-      linkedin: 'https://www.linkedin.com/in/ashraf-abdulkhaliq/',
-      avatar: 'A',
-      contributions: [
-        'Azure AI Foundry integration (DALL-E, GPT-4 Mini)',
-        'Performance optimization and bug fixing',
-        'React frontend development and architecture',
-        'Complete codebase refactoring (July 2025)',
-        'UI/UX design and responsive implementation',
-        'Azure Functions backend deployment',
-        'DeepSeek R1 integration (August 2025)',
-        'Gallery and community features development',
-        'Production deployment and DevOps'
+        'Project concept and ideation',
+        'AI/ML architecture and model training',
+        'Azure AI Foundry integration (DALL-E, GPT-4 Mini, DeepSeek R1)',
+        'Full-stack development (React, TypeScript, Azure Functions)',
+        'UI/UX design and implementation',
+        'Cloud architecture and Azure deployment',
+        'Database design and implementation',
+        'Gallery and community features',
+        'Performance optimization and DevOps',
+        'Complete system architecture'
       ]
     }
   ];
@@ -115,7 +99,7 @@ const About: React.FC = () => {
         'Basic UI for user input and outputs',
         'Initial logic and workflow design'
       ],
-      description: 'Aya conceptualized and started the AI storyboard project using local models'
+      description: 'Initial concept and development of AI storyboard system using local models'
     },
     {
       phase: 'AI Enhancement & Migration',
@@ -133,7 +117,7 @@ const About: React.FC = () => {
     {
       phase: 'Development & Refinement',
       period: 'June 2025',
-      lead: 'Ashraf',
+      lead: 'Aya',
       features: [
         'Python scripts optimization',
         'Bug fixes and stability improvements',
@@ -146,7 +130,7 @@ const About: React.FC = () => {
     {
       phase: 'Frontend Development',
       period: 'July 2025',
-      lead: 'Ashraf',
+      lead: 'Aya',
       features: [
         'React frontend initialization',
         'Complete code refactoring',
@@ -159,7 +143,7 @@ const About: React.FC = () => {
     {
       phase: 'Production Deployment',
       period: 'August 2025',
-      lead: 'Ashraf',
+      lead: 'Aya',
       features: [
         'Azure Functions backend deployment',
         'Migration to DeepSeek R3 from GPT-4 Mini',
@@ -194,30 +178,22 @@ const About: React.FC = () => {
     <>
       <SEO 
         title="About Scripto - AI-Powered Visual Storytelling"
-        description="Learn about Scripto, our mission to democratize visual storytelling through AI technology. Meet our team and explore the technology behind professional storyboard generation."
+        description="Learn about Scripto, our mission to democratize visual storytelling through AI technology. Discover the technology behind professional storyboard generation."
         keywords="about Scripto, visual storytelling technology, AI development team, storyboard creation tools, Azure AI, React development"
-        url="https://Scripto.ashraf.zone/about"
-        canonical="https://Scripto.ashraf.zone/about"
+        url="https://scripto.ayanexus.dev/about"
+        canonical="https://scripto.ayanexus.dev/about"
       />
       <StructuredData 
         type="WebApplication"
         data={{
           name: "Scripto",
           description: "Create professional storyboards from text using AI. Generate visual narratives with advanced AI models, multiple art styles, and instant export options.",
-          url: "https://Scripto.ashraf.zone/",
+          url: "https://scripto.ayanexus.dev/",
           author: [
             {
               "@type": "Person",
-              name: "Ashraf Abdulkhaliq",
-              url: "https://ashraf.zone",
-              sameAs: [
-                "https://github.com/kershrita",
-                "https://www.linkedin.com/in/ashraf-abdulkhaliq/"
-              ]
-            },
-            {
-              "@type": "Person",
-              name: "Aya Nabil",
+              name: "AyaNexus",
+              url: "https://ayanexus.dev",
               sameAs: [
                 "https://github.com/1AyaNabil1",
                 "https://www.linkedin.com/in/ayanabil11/"
@@ -593,7 +569,7 @@ const About: React.FC = () => {
                 Whether it's code, design, documentation, or ideas - every contribution matters!
               </p>
               <motion.a
-                href="https://github.com/kershrita/Scripto/fork"
+                href="https://github.com/1AyaNabil1/scripto/fork"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}
@@ -638,7 +614,7 @@ const About: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <motion.a
-              href="https://github.com/kershrita/Scripto"
+              href="https://github.com/1AyaNabil1/scripto"
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
@@ -651,7 +627,7 @@ const About: React.FC = () => {
             </motion.a>
             
             <motion.a
-              href="https://ashraf.zone"
+              href="https://ayanexus.dev"
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
@@ -659,7 +635,7 @@ const About: React.FC = () => {
               className="inline-flex items-center gap-2 border border-white/30 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-colors duration-200"
             >
               <Globe className="w-5 h-5" />
-              Visit Portfolio
+              Visit My Website
               <ExternalLink className="w-4 h-4" />
             </motion.a>
           </div>
@@ -693,7 +669,7 @@ const About: React.FC = () => {
           </p>
           
           <motion.a
-            href="mailto:contact@ashraf.zone"
+            href="mailto:contact@ayanexus.dev"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"

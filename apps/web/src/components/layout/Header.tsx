@@ -54,18 +54,8 @@ const Header: React.FC<HeaderProps> = ({
     <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16">
-          {/* Left side - Project name and back button */}
+          {/* Left side - Project name */}
           <div className="flex items-center space-x-4 flex-1">
-            {showBackToMain && (
-              <a 
-                href="https://ashraf.zone" 
-                className="flex items-center text-neutral-600 hover:text-emerald-600 transition-colors duration-200"
-                aria-label="Back to main portfolio"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                <Home className="w-5 h-5" />
-              </a>
-            )}
             <div className="flex items-center">
               <Link 
                 to="/"

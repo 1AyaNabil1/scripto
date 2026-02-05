@@ -41,6 +41,8 @@ export interface User {
   dailyUsageCount: number;
   lastUsageDate: string;
   isEmailVerified?: boolean; // For authenticated users
+  isAdmin?: boolean; // Admin status
+  role?: 'user' | 'admin' | 'superadmin'; // User role
 }
 
 // Authentication types
