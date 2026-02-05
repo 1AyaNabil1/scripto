@@ -9,13 +9,17 @@ interface GalleryGridProps {
   currentUserId?: string;
   onLike: (storyId: string) => void;
   isLoading?: boolean;
+  isAdmin?: boolean;
+  onDelete?: (storyId: string) => Promise<void>;
 }
 
 export const GalleryGrid: React.FC<GalleryGridProps> = ({
   stories,
   currentUserId,
   onLike,
-  isLoading = false
+  isLoading = false,
+  isAdmin = false,
+  onDelete,
 }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -96,6 +100,8 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
               story={story}
               currentUserId={currentUserId}
               onLike={onLike}
+              isAdmin={isAdmin}
+              onDelete={onDelete}
             />
           </motion.div>
         ))}

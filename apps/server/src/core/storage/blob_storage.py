@@ -1,5 +1,6 @@
 """
 Azure Blob Storage service for handling image uploads and management.
+Optimized for low-latency uploads with proper timeout handling.
 """
 
 import os
@@ -13,14 +14,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Timeout configurations for low latency
+DOWNLOAD_TIMEOUT = 15  # seconds for downloading from DALL-E
+UPLOAD_TIMEOUT = 30  # seconds for uploading to blob storage
+CONNECTION_TIMEOUT = 10  # seconds for initial connection
+
 class BlobStorageService:
     def __init__(self):
-        """Initialize Azure Blob Storage client."""
+        """Initialize Azure Blob Storage client with optimized settings."""
         connection_string = os.environ.get('AzureWebJobsStorage')
         if not connection_string:
             raise ValueError("AzureWebJobsStorage environment variable not set")
         
-        self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        # Create client with connection timeout
+        self.blob_service_client = BlobServiceClient.from_connection_string(
+            connection_string,
+            connection_timeout=CONNECTION_TIMEOUT,
+            read_timeout=UPLOAD_TIMEOUT
+        )
         self.container_name = "storyboard-images"
         
         # Extract account name and key from connection string for SAS generation
@@ -50,7 +61,7 @@ class BlobStorageService:
     
     def upload_image_from_url(self, image_url: str, file_name: Optional[str] = None) -> str:
         """
-        Download image from URL and upload to blob storage.
+        Download image from URL and upload to blob storage with optimized settings.
         
         Args:
             image_url: URL of the image to download and upload
@@ -66,12 +77,20 @@ class BlobStorageService:
             elif not file_name.endswith(('.png', '.jpg', '.jpeg')):
                 file_name += '.png'
             
-            # Download image from URL
+            # Download image from URL with timeout
             logger.info(f"Downloading image from: {image_url}")
-            response = requests.get(image_url, timeout=30)
+            response = requests.get(
+                image_url, 
+                timeout=DOWNLOAD_TIMEOUT,
+                stream=True  # Stream for memory efficiency
+            )
             response.raise_for_status()
             
-            # Upload to blob storage
+            # Read content into memory
+            image_data = response.content
+            logger.info(f"Downloaded image size: {len(image_data)} bytes")
+            
+            # Upload to blob storage with timeout
             blob_client = self.blob_service_client.get_blob_client(
                 container=self.container_name,
                 blob=file_name
@@ -80,10 +99,13 @@ class BlobStorageService:
             # Set content type for images
             content_settings = ContentSettings(content_type='image/png')
             
+            # Upload with explicit timeout and max concurrency for speed
             blob_client.upload_blob(
-                data=BytesIO(response.content),
+                data=BytesIO(image_data),
                 content_settings=content_settings,
-                overwrite=True
+                overwrite=True,
+                max_concurrency=4,  # Parallel upload threads
+                timeout=UPLOAD_TIMEOUT
             )
             
             # Generate SAS URL for private container access (valid for 10 years)
@@ -100,6 +122,9 @@ class BlobStorageService:
             logger.info(f"Successfully uploaded image to: {blob_url_with_sas}")
             return blob_url_with_sas
             
+        except requests.Timeout:
+            logger.error(f"Timeout downloading image from {image_url}")
+            raise Exception("Image download timed out")
         except requests.RequestException as e:
             logger.error(f"Failed to download image from {image_url}: {e}")
             raise Exception(f"Failed to download image: {str(e)}")

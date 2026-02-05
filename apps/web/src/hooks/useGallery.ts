@@ -88,7 +88,14 @@ export const useGallery = () => {
   // Get stories by user
   const getUserStories = useCallback((userId: string): GalleryStory[] => {
     return galleryStories.filter(story => story.userId === userId);
-  }, [galleryStories]);  // Search stories
+  }, [galleryStories]);
+
+  // Remove a story from the gallery (for admin delete)
+  const removeStory = useCallback((storyId: string): void => {
+    setGalleryStories(prev => prev.filter(story => story.id !== storyId));
+  }, []);
+
+  // Search stories
   const searchStories = useCallback((query: string): GalleryStory[] => {
     const lowercaseQuery = query.toLowerCase();
     return galleryStories.filter(story => 
@@ -113,5 +120,6 @@ export const useGallery = () => {
     likeStory,
     getUserStories,
     searchStories,
+    removeStory,
   };
 };

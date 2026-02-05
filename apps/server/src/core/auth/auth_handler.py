@@ -96,8 +96,8 @@ class AuthHandler:
         # Create user in database
         new_user = db_service.create_user_with_auth(user_data)
         
-        # Generate tokens
-        tokens = AuthService.generate_tokens(user_id, email)
+        # Generate tokens (new users are not admin by default)
+        tokens = AuthService.generate_tokens(user_id, email, is_admin=False, role='user')
         
         # Generate email verification token (optional)
         verification_token = AuthService.generate_verification_token(email)
@@ -132,8 +132,8 @@ class AuthHandler:
         if not AuthService.verify_password(password, user.password):
             raise ValidationError("Invalid email or password")
         
-        # Generate tokens
-        tokens = AuthService.generate_tokens(user.id, email)
+        # Generate tokens with admin status
+        tokens = AuthService.generate_tokens(user.id, email, is_admin=user.is_admin, role=user.role)
         
         response_data = {
             **user.to_dict(),
@@ -165,8 +165,8 @@ class AuthHandler:
             if not user:
                 raise ValidationError("User not found")
             
-            # Generate new tokens
-            tokens = AuthService.generate_tokens(user_id, email)
+            # Generate new tokens with admin status
+            tokens = AuthService.generate_tokens(user_id, email, is_admin=user.is_admin, role=user.role)
             
             return create_json_response(tokens)
             

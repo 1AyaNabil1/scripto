@@ -6,7 +6,8 @@ import {
   UserCircle, 
   History,
   Heart,
-  BarChart3
+  BarChart3,
+  Shield
 } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 
@@ -69,13 +70,19 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = '' }) => {
       .slice(0, 2);
   };
 
+  const isAdmin = user?.isAdmin || user?.role === 'admin' || user?.role === 'superadmin';
+
   const getUsagePercentage = () => {
     if (!user) return 0;
+    // Admins have unlimited usage
+    if (isAdmin) return 0;
     const dailyLimit = 3; // Daily limit of 3
     return Math.min((user.dailyUsageCount / dailyLimit) * 100, 100);
   };
 
   const getUsageColor = () => {
+    // Admins always have green status
+    if (isAdmin) return 'bg-emerald-500';
     const percentage = getUsagePercentage();
     if (percentage < 50) return 'bg-emerald-500';
     if (percentage < 80) return 'bg-yellow-500';
@@ -110,7 +117,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = '' }) => {
             {user.name}
           </div>
           <div className="text-xs text-neutral-500 truncate max-w-24">
-            {user.dailyUsageCount}/3 today
+            {isAdmin ? '∞ Unlimited' : `${user.dailyUsageCount}/3 today`}
           </div>
         </div>
 
@@ -158,19 +165,38 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = '' }) => {
               <div className="mt-3">
                 <div className="flex justify-between text-xs text-neutral-600 mb-1">
                   <span>Daily Usage</span>
-                  <span>{user.dailyUsageCount}/3</span>
+                  <span>{isAdmin ? '∞ Unlimited' : `${user.dailyUsageCount}/3`}</span>
                 </div>
-                <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-300 ${getUsageColor()}`}
-                    style={{ width: `${getUsagePercentage()}%` }}
-                  />
-                </div>
+                {isAdmin ? (
+                  <div className="text-xs text-emerald-600 font-medium">Admin - Unlimited Access</div>
+                ) : (
+                  <div className="w-full bg-neutral-200 rounded-full h-1.5">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-300 ${getUsageColor()}`}
+                      style={{ width: `${getUsagePercentage()}%` }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Menu Items */}
             <div className="py-1">
+              {/* Admin Dashboard Link - Only visible for admins */}
+              {isAdmin && (
+                <>
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors duration-200 font-medium"
+                  >
+                    <Shield className="w-4 h-4 mr-3 text-purple-600" />
+                    Admin Dashboard
+                  </Link>
+                  <hr className="my-1 border-neutral-100" />
+                </>
+              )}
+              
               <Link
                 to="/profile"
                 onClick={() => setIsOpen(false)}

@@ -1,6 +1,6 @@
 import azure.functions as func
 import logging
-from src.api import StoryboardHandler, UserHandler, GalleryHandler
+from src.api import StoryboardHandler, UserHandler, GalleryHandler, AdminHandler
 from src.core.auth.auth_handler import AuthHandler
 
 app = func.FunctionApp()
@@ -104,3 +104,54 @@ def get_user_stories(req: func.HttpRequest) -> func.HttpResponse:
 def reset_daily_usage_manual(req: func.HttpRequest) -> func.HttpResponse:
     """Manually reset daily usage for all users."""
     return UserHandler.reset_daily_usage(req)
+
+# ==================== ADMIN ENDPOINTS ====================
+# Note: Using "management/" prefix instead of "admin/" to avoid Azure Functions built-in route conflicts
+
+# Admin User Management
+@app.route(route="management/users", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_get_all_users(req: func.HttpRequest) -> func.HttpResponse:
+    """Get all users (admin only)."""
+    return AdminHandler.get_all_users(req)
+
+@app.route(route="management/users/{userId}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_get_user_details(req: func.HttpRequest) -> func.HttpResponse:
+    """Get detailed user information (admin only)."""
+    return AdminHandler.get_user_details(req)
+
+@app.route(route="management/users/{userId}", methods=["DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_delete_user(req: func.HttpRequest) -> func.HttpResponse:
+    """Delete a user (admin only)."""
+    return AdminHandler.delete_user(req)
+
+@app.route(route="management/users/{userId}/role", methods=["PATCH"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_update_user_role(req: func.HttpRequest) -> func.HttpResponse:
+    """Update user role (admin only)."""
+    return AdminHandler.update_user_role(req)
+
+# Admin Story Management
+@app.route(route="management/stories", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_get_all_stories(req: func.HttpRequest) -> func.HttpResponse:
+    """Get all stories including private ones (admin only)."""
+    return AdminHandler.get_all_stories(req)
+
+@app.route(route="management/stories", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_add_story(req: func.HttpRequest) -> func.HttpResponse:
+    """Add a story to gallery for any user (admin only)."""
+    return AdminHandler.add_story_to_gallery(req)
+
+@app.route(route="management/stories/{storyId}", methods=["DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_delete_story(req: func.HttpRequest) -> func.HttpResponse:
+    """Delete a story (admin only)."""
+    return AdminHandler.delete_story(req)
+
+@app.route(route="management/stories/{storyId}/visibility", methods=["PATCH"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_update_story_visibility(req: func.HttpRequest) -> func.HttpResponse:
+    """Update story visibility (admin only)."""
+    return AdminHandler.update_story_visibility(req)
+
+# Admin Statistics
+@app.route(route="management/stats", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_get_stats(req: func.HttpRequest) -> func.HttpResponse:
+    """Get admin dashboard statistics."""
+    return AdminHandler.get_admin_stats(req)

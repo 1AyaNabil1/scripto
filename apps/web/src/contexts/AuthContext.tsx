@@ -32,12 +32,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Legacy compatibility methods
   const getRemainingUsage = (): number => {
     if (!auth.user) return 0;
+    // Admins have unlimited usage
+    if (auth.user.isAdmin || auth.user.role === 'admin' || auth.user.role === 'superadmin') {
+      return Infinity;
+    }
     const usageCount = auth.user.dailyUsageCount ?? 0;
     return Math.max(0, 3 - usageCount);
   };
 
   const canUseService = (): boolean => {
     if (!auth.user) return false;
+    // Admins always can use the service
+    if (auth.user.isAdmin || auth.user.role === 'admin' || auth.user.role === 'superadmin') {
+      return true;
+    }
     const usageCount = auth.user.dailyUsageCount ?? 0;
     return usageCount < 3;
   };

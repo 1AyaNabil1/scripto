@@ -14,6 +14,7 @@ import {
 } from './components';
 import { AuthPage } from './components/pages/AuthPage';
 import { PasswordResetPage } from './components/pages/PasswordResetPage';
+import { AdminDashboard, AdminUsers, AdminStories } from './components/pages/admin';
 import { ScrollToTop, ScrollToTopButton, RedirectTo404 } from './components/common';
 
 // Main App Component with Router Navigation
@@ -50,6 +51,23 @@ function AppContent() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/reset-password" element={<PasswordResetPage />} />
         <Route path="/404" element={<NotFound />} />
+        
+        {/* Admin Routes - Standalone with own navigation */}
+        <Route path="/admin" element={
+          <div className="pt-20 pb-12">
+            <AdminDashboard />
+          </div>
+        } />
+        <Route path="/admin/users" element={
+          <div className="pt-20 pb-12">
+            <AdminUsers />
+          </div>
+        } />
+        <Route path="/admin/stories" element={
+          <div className="pt-20 pb-12">
+            <AdminStories />
+          </div>
+        } />
         
         {/* All other routes with Header/Footer layout */}
         <Route path="/*" element={

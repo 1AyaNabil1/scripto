@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Heart, User, Calendar, Eye, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, User, Calendar, Eye, Image as ImageIcon, Trash2, AlertTriangle } from 'lucide-react';
 import type { GalleryStory } from '../../types';
 import { Card, Badge, Button } from '../ui';
 import { CachedImage } from '../common';
@@ -10,15 +10,21 @@ interface GalleryCardProps {
   story: GalleryStory;
   currentUserId?: string;
   onLike: (storyId: string) => void;
+  isAdmin?: boolean;
+  onDelete?: (storyId: string) => Promise<void>;
 }
 
 export const GalleryCard: React.FC<GalleryCardProps> = ({
   story,
   currentUserId,
   onLike,
+  isAdmin = false,
+  onDelete,
 }) => {
   const navigate = useNavigate();
   const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleLike = async () => {
     if (!currentUserId || isLiking) return;
@@ -26,6 +32,20 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
     setIsLiking(true);
     await onLike(story.id);
     setIsLiking(false);
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || isDeleting) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDelete(story.id);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Error deleting story:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Parse frames properly and get correct count
@@ -178,6 +198,17 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
                 />
                 <span>{likeCount}</span>
               </button>
+
+              {/* Admin Delete button */}
+              {isAdmin && onDelete && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
+                  title="Delete story (Admin)"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* View button */}
@@ -192,6 +223,51 @@ export const GalleryCard: React.FC<GalleryCardProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-3 text-red-600 mb-4">
+                  <AlertTriangle className="w-6 h-6" />
+                  <h2 className="text-xl font-bold">Delete Story</h2>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to delete <strong>"{story.title}"</strong>? 
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
     </motion.div>
   );

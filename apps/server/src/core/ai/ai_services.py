@@ -6,7 +6,7 @@ import logging
 import json
 import time
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from openai import AzureOpenAI
 from src.config.settings import Config
 from src.models import StoryFrame, StoryboardResponse, APIError, RateLimitError
@@ -22,31 +22,21 @@ class DeepSeekService:
     
     def build_prompt(self, prompt: str, genre: str, visual_style: str, mood: str, 
                     frame_count: int, camera_angles: List[str]) -> str:
-        """Build enhanced prompt for LLM model with character consistency requirements"""
-        return f"""Generate a detailed storyboard with {frame_count} frames for the following story:
-"{prompt}"
+        """Build optimized prompt for LLM model - concise but effective"""
+        return f"""Create a {frame_count}-frame storyboard for: "{prompt}"
 
-Genre: {genre}
-Visual Style: {visual_style}
-Mood: {mood}
+Style: {visual_style} | Genre: {genre} | Mood: {mood}
 
-IMPORTANT REQUIREMENTS FOR CHARACTER CONSISTENCY:
-1. Identify the main characters early and maintain their appearance throughout all frames
-2. Include detailed character descriptions (age, gender, hair color/style, clothing, distinctive features)
-3. For each frame, describe characters with consistent physical traits
-4. Include environmental details that should remain consistent (locations, time of day, weather)
-5. Specify visual continuity elements (lighting style, color palette, artistic approach)
+For each frame, provide JSON with:
+- description: 1-2 sentence scene summary
+- detailedDescription: Visual scene (characters, setting, lighting) for image generation. Keep safe/family-friendly.
+- dialogue: Character dialogue or empty string
+- actionNote: Character actions or empty string  
+- cameraAngle: One of {json.dumps(camera_angles)}
+- characterDetails: Brief character appearance (age, hair, clothes)
+- environmentDetails: Setting, lighting, colors
 
-For each frame, return a JSON object with the following properties:
-- "description": A simple, clean scene description for UI display (1-2 sentences, user-friendly)
-- "detailedDescription": A comprehensive scene description including character details, setting, actions, and visual elements for image generation
-- "dialogue": (Optional) Dialogue, or an empty string if none
-- "actionNote": (Optional) Action note including character movements and interactions, or an empty string if none
-- "cameraAngle": Suggested camera angle (from: {json.dumps(camera_angles)})
-- "characterDetails": A brief description of main characters visible in this frame with their consistent physical traits
-- "environmentDetails": Description of the setting, lighting, and atmosphere for visual continuity
-
-Return the result as a single valid JSON object with two properties: 'title' (a short title of 3-4 words max based on the story) and 'frames' (an array of frame objects). Ensure all values are properly quoted and the JSON is syntactically correct."""
+Return JSON: {{"title": "3-4 word title", "frames": [...]}}"""
     
     def generate_storyboard_data(self, prompt: str, genre: str, visual_style: str, mood: str,
                                frame_count: int, camera_angles: List[str]) -> StoryboardResponse:
@@ -56,7 +46,7 @@ Return the result as a single valid JSON object with two properties: 'title' (a 
             logging.info(f"Calling Azure OpenAI with endpoint: {self.endpoint}")
 
             client = AzureOpenAI(
-                azure_endpoint=self.endpoint,
+                azure_endpoint=self.endpoint or "",
                 api_key=self.api_key,
                 api_version="2024-05-01-preview"
             )
@@ -64,7 +54,7 @@ Return the result as a single valid JSON object with two properties: 'title' (a 
             response = client.chat.completions.create(
                 model=self.model_name,
                 messages=[
-                    {"role": "system", "content": "You are an expert storyboard generation assistant with deep understanding of visual storytelling and character consistency. Your task is to generate a response strictly as a valid JSON object with two properties: 'title' (a short title of 3-4 words max based on the story) and 'frames' (an array of frame objects). CRITICAL: Ensure visual continuity by maintaining consistent character descriptions, environmental details, and artistic elements across all frames. Provide both simple UI descriptions and detailed descriptions for image generation. Do not include any text outside the JSON structure. If you cannot generate valid JSON, return {{'title': '', 'frames': []}}. Ensure all properties ('description', 'detailedDescription', 'dialogue', 'actionNote', 'cameraAngle', 'characterDetails', 'environmentDetails') in each frame are present with proper quoting, even if empty."},
+                    {"role": "system", "content": "You are a storyboard assistant. Return ONLY valid JSON with 'title' and 'frames' array. Keep descriptions concise and family-friendly. Avoid weapons, violence, or controversial content. Maintain character consistency across frames."},
                     {"role": "user", "content": gpt_prompt}
                 ],
                 max_tokens=Config.MAX_TOKENS,
@@ -139,58 +129,82 @@ Return the result as a single valid JSON object with two properties: 'title' (a 
 class DALLEService:
     """Service for generating images with DALL-E"""
     
+    # Words that may trigger content policy violations
+    UNSAFE_WORDS = {
+        'dagger', 'knife', 'sword', 'weapon', 'gun', 'pistol', 'rifle', 'blade',
+        'blood', 'gore', 'violent', 'kill', 'murder', 'death', 'dead', 'dying',
+        'naked', 'nude', 'sexy', 'seductive', 'provocative', 'revealing',
+        'drug', 'drugs', 'cocaine', 'heroin', 'marijuana', 'cigarette',
+        'alcohol', 'drunk', 'beer', 'wine', 'whiskey', 'vodka',
+        'fight', 'attack', 'punch', 'kick', 'hit', 'strike', 'combat',
+        'war', 'battle', 'soldier', 'military', 'army', 'explosion'
+    }
+    
+    # Safe replacements for common unsafe words
+    SAFE_REPLACEMENTS = {
+        'dagger': 'accessory', 'knife': 'tool', 'sword': 'staff', 'weapon': 'item',
+        'gun': 'device', 'blade': 'pendant', 'fight': 'confrontation',
+        'attack': 'approach', 'battle': 'challenge', 'soldier': 'guardian'
+    }
+    
     def __init__(self):
         self.endpoint = Config.DALLE_MODEL_ENDPOINT
         self.api_key = Config.DALLE_MODEL_API_KEY
         self.model_name = Config.DALLE_MODEL_NAME
     
+    def _sanitize_prompt(self, text: str) -> str:
+        """Remove or replace potentially unsafe words from prompt"""
+        result = text.lower()
+        for unsafe, safe in self.SAFE_REPLACEMENTS.items():
+            result = result.replace(unsafe, safe)
+        
+        # Remove any remaining unsafe words
+        words = result.split()
+        filtered = [w for w in words if w.lower() not in self.UNSAFE_WORDS]
+        return ' '.join(filtered)
+    
     def build_image_prompt(self, description: str, visual_style: str, mood: str, 
-                          frame_number: int, total_frames: int, story_context: str = "",
+                          frame_number: int = 1, total_frames: int = 1, story_context: str = "",
                           character_details: str = "", environment_details: str = "") -> str:
-        """Build comprehensive image prompt for DALL-E with enhanced character consistency"""
-        base_prompt = "Digital illustration of a scene"
+        """Build concise, safe image prompt for DALL-E (max 400 chars)"""
+        # Sanitize all inputs
+        safe_desc = self._sanitize_prompt(description)
+        safe_chars = self._sanitize_prompt(character_details) if character_details else ""
+        safe_env = self._sanitize_prompt(environment_details) if environment_details else ""
         
-        # Character consistency instructions
-        character_consistency = ""
-        if character_details:
-            character_consistency = f". Characters: {character_details}"
+        # Build concise prompt - prioritize essential elements
+        parts = [f"{visual_style} illustration"]
         
-        # Environment consistency instructions  
-        environment_consistency = ""
-        if environment_details:
-            environment_consistency = f". Setting: {environment_details}"
+        # Add scene description (truncate if needed)
+        if safe_desc:
+            parts.append(safe_desc[:120])
         
-        # Style and mood instructions
-        style_instructions = f". Art style: {visual_style} style"
-        mood_instructions = f". Atmosphere: {mood} mood with appropriate lighting"
+        # Add character info (brief)
+        if safe_chars:
+            parts.append(f"featuring {safe_chars[:60]}")
         
-        # Scene description
-        scene_description = f". Scene: {description}"
+        # Add environment info (brief)
+        if safe_env:
+            parts.append(safe_env[:50])
         
-        # Quality instructions
-        quality_instructions = ". High quality digital art, clean composition, no UI elements, no borders, no frames, no text overlays, no storyboard panels, just the pure scene illustration"
+        # Add style/mood
+        parts.append(f"{mood} atmosphere, digital art")
         
-        # Combine all elements
-        full_prompt = (base_prompt + scene_description + character_consistency + environment_consistency + 
-                      style_instructions + mood_instructions + quality_instructions)
+        full_prompt = ", ".join(parts)
         
-        # Ensure prompt isn't too long (DALL-E has limits)
-        if len(full_prompt) > 1000:
-            essential_parts = base_prompt + scene_description + character_consistency + style_instructions + quality_instructions
-            if len(essential_parts) <= 1000:
-                full_prompt = essential_parts
-            else:
-                full_prompt = full_prompt[:1000]
+        # Hard limit at 400 characters for faster generation
+        if len(full_prompt) > 400:
+            full_prompt = full_prompt[:397] + "..."
         
         return full_prompt
     
-    def generate_image(self, image_prompt: str, story_id: str = None, frame_number: int = None) -> str:
+    def generate_image(self, image_prompt: str, story_id: Optional[str] = None, frame_number: Optional[int] = None) -> str:
         """Generate image using DALL-E API and upload to blob storage"""
         
         for attempt in range(Config.MAX_RETRIES):
             try:
                 client = AzureOpenAI(
-                    azure_endpoint=self.endpoint,
+                    azure_endpoint=self.endpoint or "",
                     api_key=self.api_key,
                     api_version="2024-05-01-preview"
                 )

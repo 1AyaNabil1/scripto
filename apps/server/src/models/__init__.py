@@ -104,6 +104,8 @@ class User:
     daily_usage_count: int = 0
     last_usage_date: date = None
     is_email_verified: bool = False
+    is_admin: bool = False
+    role: str = 'user'  # 'user', 'admin', 'superadmin'
     
     @classmethod
     def from_db_row(cls, row: Dict[str, Any]) -> 'User':
@@ -117,7 +119,9 @@ class User:
             created_at=row['created_at'],
             daily_usage_count=row['daily_usage_count'],
             last_usage_date=row['last_usage_date'],
-            is_email_verified=row.get('is_email_verified', False)
+            is_email_verified=row.get('is_email_verified', False),
+            is_admin=row.get('is_admin', False),
+            role=row.get('role', 'user')
         )
     
     def to_dict(self, include_sensitive: bool = False) -> Dict[str, Any]:
@@ -129,7 +133,9 @@ class User:
             "createdAt": self.created_at.isoformat() if self.created_at else None,
             "dailyUsageCount": self.daily_usage_count,
             "lastUsageDate": self.last_usage_date.isoformat() if self.last_usage_date else None,
-            "isEmailVerified": self.is_email_verified
+            "isEmailVerified": self.is_email_verified,
+            "isAdmin": self.is_admin,
+            "role": self.role
         }
         
         # Include device_id for backward compatibility if it exists

@@ -112,12 +112,23 @@ class DatabaseService:
     
     def update_user_usage(self, user_id: str, daily_usage_count: int, last_usage_date: str) -> User:
         """Update user usage count"""
+        # Convert ISO format date to MySQL datetime format
+        # Input: '2026-02-04T23:52:25.493Z' -> Output: '2026-02-04 23:52:25'
+        from datetime import datetime
+        try:
+            # Parse ISO format and convert to MySQL format
+            dt = datetime.fromisoformat(last_usage_date.replace('Z', '+00:00'))
+            mysql_date = dt.strftime('%Y-%m-%d %H:%M:%S')
+        except (ValueError, AttributeError):
+            # If parsing fails, try to use as-is (maybe it's already in correct format)
+            mysql_date = last_usage_date
+        
         query = """
         UPDATE users 
         SET daily_usage_count = %s, last_usage_date = %s 
         WHERE id = %s
         """
-        rows_affected = self.execute_query(query, (daily_usage_count, last_usage_date, user_id))
+        rows_affected = self.execute_query(query, (daily_usage_count, mysql_date, user_id))
         if rows_affected == 0:
             raise NotFoundError("User not found")
         return self.get_user_by_id(user_id)
@@ -279,6 +290,104 @@ class DatabaseService:
         """Update user password"""
         query = "UPDATE users SET password = %s WHERE id = %s"
         self.execute_query(query, (hashed_password, user_id), fetch_all=False)
+
+    # Admin-specific Methods
+    def get_all_users(self, limit: int = 100, offset: int = 0) -> List[User]:
+        """Get all users (admin only)"""
+        query = """
+        SELECT * FROM users 
+        ORDER BY created_at DESC 
+        LIMIT %s OFFSET %s
+        """
+        rows = self.execute_query(query, (limit, offset))
+        return [User.from_db_row(row) for row in rows]
+    
+    def get_users_count(self) -> int:
+        """Get total count of users"""
+        query = "SELECT COUNT(*) as count FROM users"
+        result = self.execute_query(query, fetch_one=True)
+        return result['count'] if result else 0
+    
+    def get_all_stories(self, limit: int = 100, offset: int = 0, include_private: bool = True) -> List[GalleryStory]:
+        """Get all stories including private ones (admin only)"""
+        if include_private:
+            query = """
+            SELECT gs.*, 
+                   (SELECT COUNT(*) FROM story_likes sl WHERE sl.story_id = gs.id) as likes
+            FROM gallery_stories gs 
+            ORDER BY created_at DESC 
+            LIMIT %s OFFSET %s
+            """
+        else:
+            query = """
+            SELECT gs.*, 
+                   (SELECT COUNT(*) FROM story_likes sl WHERE sl.story_id = gs.id) as likes
+            FROM gallery_stories gs 
+            WHERE is_public = TRUE 
+            ORDER BY created_at DESC 
+            LIMIT %s OFFSET %s
+            """
+        rows = self.execute_query(query, (limit, offset))
+        return [GalleryStory.from_db_row(row) for row in rows]
+    
+    def get_stories_count(self, include_private: bool = True) -> int:
+        """Get total count of stories"""
+        if include_private:
+            query = "SELECT COUNT(*) as count FROM gallery_stories"
+            result = self.execute_query(query, fetch_one=True)
+        else:
+            query = "SELECT COUNT(*) as count FROM gallery_stories WHERE is_public = TRUE"
+            result = self.execute_query(query, fetch_one=True)
+        return result['count'] if result else 0
+    
+    def delete_story(self, story_id: str) -> bool:
+        """Delete a story from gallery (admin only)"""
+        query = "DELETE FROM gallery_stories WHERE id = %s"
+        rows_affected = self.execute_query(query, (story_id,))
+        return rows_affected > 0
+    
+    def update_story_visibility(self, story_id: str, is_public: bool) -> Optional[GalleryStory]:
+        """Update story visibility (add/remove from gallery)"""
+        query = "UPDATE gallery_stories SET is_public = %s WHERE id = %s"
+        rows_affected = self.execute_query(query, (is_public, story_id))
+        if rows_affected > 0:
+            return self.get_story_by_id(story_id)
+        return None
+    
+    def delete_user(self, user_id: str) -> bool:
+        """Delete a user (admin only) - cascades to delete their stories"""
+        query = "DELETE FROM users WHERE id = %s"
+        rows_affected = self.execute_query(query, (user_id,))
+        return rows_affected > 0
+    
+    def update_user_admin_status(self, user_id: str, is_admin: bool, role: str = 'user') -> Optional[User]:
+        """Update user admin status"""
+        query = "UPDATE users SET is_admin = %s, role = %s WHERE id = %s"
+        rows_affected = self.execute_query(query, (is_admin, role, user_id))
+        if rows_affected > 0:
+            return self.get_user_by_id(user_id)
+        return None
+    
+    def create_admin_user(self, user_data: Dict) -> User:
+        """Create a new admin user"""
+        query = """
+        INSERT INTO users (id, name, email, password, created_at, daily_usage_count, last_usage_date, is_email_verified, is_admin, role)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        params = (
+            user_data['id'],
+            user_data['name'],
+            user_data['email'],
+            user_data['password'],
+            user_data.get('createdAt', datetime.utcnow()),
+            user_data.get('dailyUsageCount', 0),
+            user_data.get('lastUsageDate', date.today()),
+            user_data.get('isEmailVerified', True),  # Admin accounts are pre-verified
+            user_data.get('isAdmin', True),
+            user_data.get('role', 'admin')
+        )
+        self.execute_query(query, params)
+        return self.get_user_by_id(user_data['id'])
 
 # Global database service instance
 db_service = DatabaseService()

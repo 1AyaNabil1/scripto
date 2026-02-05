@@ -19,13 +19,17 @@ CREATE TABLE users (
     daily_usage_count INT DEFAULT 0,
     last_usage_date DATE DEFAULT (CURRENT_DATE),
     is_email_verified BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
+    role ENUM('user', 'admin', 'superadmin') DEFAULT 'user',
     
     -- Indexes for performance
     INDEX idx_device_id (device_id),
     INDEX idx_email (email),
     INDEX idx_last_usage_date (last_usage_date),
     INDEX idx_email_verified (is_email_verified),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_is_admin (is_admin),
+    INDEX idx_role (role)
 );
 
 -- =====================================================

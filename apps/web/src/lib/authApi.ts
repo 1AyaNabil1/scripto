@@ -112,6 +112,8 @@ class AuthApiClient {
       dailyUsageCount: response.dailyUsageCount,
       lastUsageDate: response.lastUsageDate,
       isEmailVerified: response.isEmailVerified,
+      isAdmin: response.isAdmin,
+      role: response.role,
     };
     
     localStorage.setItem('user', JSON.stringify(user));
@@ -141,6 +143,8 @@ class AuthApiClient {
       dailyUsageCount: response.dailyUsageCount,
       lastUsageDate: response.lastUsageDate,
       isEmailVerified: response.isEmailVerified,
+      isAdmin: response.isAdmin,
+      role: response.role,
     };
     
     localStorage.setItem('user', JSON.stringify(user));

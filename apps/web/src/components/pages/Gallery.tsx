@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter } from 'lucide-react';
@@ -6,6 +6,7 @@ import { GalleryGrid } from '../gallery/GalleryGrid';
 import { useGallery } from '../../hooks/useGallery';
 import { useGalleryImagePreloader } from '../../hooks';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { adminApiClient } from '../../lib/adminApi';
 import SEO from '../common/SEO';
 import SiteStructuredData from '../common/SiteStructuredData';
 
@@ -15,9 +16,12 @@ const Gallery: React.FC = () => {
   const { 
     galleryStories, 
     isLoading, 
-    error, 
+    error,
+    removeStory,
     likeStory
   } = useGallery();
+  
+  const isAdmin = user?.isAdmin || user?.role === 'admin' || user?.role === 'superadmin';
   
   const [searchQuery, setSearchQuery] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
@@ -78,6 +82,21 @@ const Gallery: React.FC = () => {
       alert(errorMessage);
     }
   };
+
+  // Admin delete handler
+  const handleDelete = useCallback(async (storyId: string) => {
+    if (!isAdmin) return;
+    
+    try {
+      await adminApiClient.deleteStory(storyId);
+      removeStory(storyId);
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete story. Please try again.';
+      alert(errorMessage);
+      throw error;
+    }
+  }, [isAdmin, removeStory]);
 
   return (
     <>
@@ -192,6 +211,8 @@ const Gallery: React.FC = () => {
             isLoading={isLoading}
             currentUserId={user?.id}
             onLike={handleLike}
+            isAdmin={isAdmin}
+            onDelete={handleDelete}
           />
         </div>
       </div>

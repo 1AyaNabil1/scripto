@@ -69,6 +69,8 @@ export const useAuth = (): UseAuthReturn => {
         dailyUsageCount: response.dailyUsageCount,
         lastUsageDate: response.lastUsageDate,
         isEmailVerified: response.isEmailVerified,
+        isAdmin: response.isAdmin,
+        role: response.role,
       };
       
       setUser(newUser);
@@ -97,6 +99,8 @@ export const useAuth = (): UseAuthReturn => {
         dailyUsageCount: response.dailyUsageCount,
         lastUsageDate: response.lastUsageDate,
         isEmailVerified: response.isEmailVerified,
+        isAdmin: response.isAdmin,
+        role: response.role,
       };
       
       setUser(newUser);

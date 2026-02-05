@@ -26,7 +26,7 @@ class AuthService:
         return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
     
     @staticmethod
-    def generate_tokens(user_id: str, email: str) -> Dict[str, Any]:
+    def generate_tokens(user_id: str, email: str, is_admin: bool = False, role: str = 'user') -> Dict[str, Any]:
         """Generate access and refresh tokens for a user"""
         now = datetime.now(timezone.utc)
         
@@ -34,6 +34,8 @@ class AuthService:
         access_payload = {
             'user_id': user_id,
             'email': email,
+            'is_admin': is_admin,
+            'role': role,
             'exp': now + timedelta(hours=1),
             'iat': now,
             'type': 'access'
@@ -43,6 +45,8 @@ class AuthService:
         refresh_payload = {
             'user_id': user_id,
             'email': email,
+            'is_admin': is_admin,
+            'role': role,
             'exp': now + timedelta(days=7),
             'iat': now,
             'type': 'refresh'
@@ -151,6 +155,47 @@ def require_auth(func):
             # Add user info to request for use in handler
             req.user_id = payload.get('user_id')
             req.user_email = payload.get('email')
+            req.is_admin = payload.get('is_admin', False)
+            req.role = payload.get('role', 'user')
+        except ValidationError as e:
+            raise ValidationError(str(e))
+        
+        return func(*args, **kwargs)
+    
+    return wrapper
+
+
+def require_admin(func):
+    """Decorator to require admin privileges for an endpoint"""
+    def wrapper(*args, **kwargs):
+        from azure.functions import HttpRequest
+        from src.models import ValidationError as ModelValidationError
+        
+        req = args[0] if args and isinstance(args[0], HttpRequest) else None
+        
+        if not req:
+            raise ValidationError("Invalid request object")
+        
+        # Extract token from Authorization header
+        auth_header = req.headers.get('Authorization')
+        token = extract_token_from_header(auth_header)
+        
+        if not token:
+            raise ValidationError("Authorization token required")
+        
+        # Verify token
+        try:
+            payload = AuthService.verify_token(token, 'access')
+            # Add user info to request for use in handler
+            req.user_id = payload.get('user_id')
+            req.user_email = payload.get('email')
+            req.is_admin = payload.get('is_admin', False)
+            req.role = payload.get('role', 'user')
+            
+            # Check admin privileges
+            if not req.is_admin and req.role not in ['admin', 'superadmin']:
+                raise ValidationError("Admin privileges required")
+                
         except ValidationError as e:
             raise ValidationError(str(e))
         

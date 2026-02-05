@@ -78,10 +78,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({
 
     if (!formData.password) {
       errors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters long';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one digit';
+    } else if (!isLoginMode) {
+      // Only validate password strength during registration, not login
+      if (formData.password.length < 8) {
+        errors.password = 'Password must be at least 8 characters long';
+      } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+        errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one digit';
+      }
     }
 
     if (!isLoginMode) {

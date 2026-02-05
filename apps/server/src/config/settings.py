@@ -38,20 +38,20 @@ class Config:
     
     # Application Settings
     DAILY_USAGE_LIMIT = 3
-    MAX_RETRIES = 3
-    PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/1792x1024/cccccc/333333?text=Image+Generation+Failed"
+    MAX_RETRIES = 2  # Reduced from 3 for faster failure
+    PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/1024x1024/cccccc/333333?text=Image+Generation+Failed"
     
-    # Image Generation Settings
-    IMAGE_SIZE = "1792x1024"  # 16:9 landscape aspect ratio
+    # Image Generation Settings - Optimized for low latency
+    IMAGE_SIZE = "1024x1024"  # Smaller size = faster generation + smaller uploads
     IMAGE_STYLE = "vivid"
     IMAGE_QUALITY = "standard"
     
-    # Model Settings
+    # Model Settings - Optimized for speed
     DEEPSEEK_MODEL_NAME = "gpt-4-mini"
     DALLE_MODEL_NAME = "dall-e-3"
-    MAX_TOKENS = 2048
-    TEMPERATURE = 0.8
-    TOP_P = 0.1
+    MAX_TOKENS = 1024  # Reduced from 2048 for faster response
+    TEMPERATURE = 0.5  # Lower = more consistent, faster
+    TOP_P = 0.9  # Slightly higher for better quality
     PRESENCE_PENALTY = 0.0
     FREQUENCY_PENALTY = 0.0
     
