@@ -134,4 +134,97 @@ class GalleryHandler:
         # Convert to dictionaries for JSON response
         stories_data = [story.to_dict() for story in stories]
         
+        return create_json_response(stories_data)    
+    @staticmethod
+    @error_handler
+    @log_request
+    def get_user_liked_stories(req: func.HttpRequest) -> func.HttpResponse:
+        """Get all stories liked by a specific user"""
+        user_id = req.route_params.get('userId')
+        if not user_id:
+            raise ValidationError("User ID required")
+        
+        stories = db_service.get_user_liked_stories(user_id)
+        
+        # Convert to dictionaries for JSON response
+        stories_data = []
+        for story in stories:
+            story_dict = story.to_dict()
+            # Add liked_at timestamp if available
+            if hasattr(story, 'liked_at') and story.liked_at:
+                story_dict['likedAt'] = story.liked_at.isoformat() if hasattr(story.liked_at, 'isoformat') else str(story.liked_at)
+            stories_data.append(story_dict)
+        
         return create_json_response(stories_data)
+    
+    @staticmethod
+    @error_handler
+    @log_request
+    def get_user_statistics(req: func.HttpRequest) -> func.HttpResponse:
+        """Get usage statistics for a specific user"""
+        user_id = req.route_params.get('userId')
+        if not user_id:
+            raise ValidationError("User ID required")
+        
+        stats = db_service.get_user_statistics(user_id)
+        
+        # Format the response
+        from calendar import month_abbr
+        from datetime import datetime, timedelta
+        
+        # Format weekly activity (last 7 days)
+        today = datetime.now().date()
+        days_map = {}
+        for i in range(7):
+            day_date = today - timedelta(days=i)
+            days_map[day_date.strftime('%Y-%m-%d')] = day_date.strftime('%a')
+        
+        weekly_activity = []
+        for i in range(7):
+            day_date = today - timedelta(days=6-i)
+            day_str = day_date.strftime('%Y-%m-%d')
+            day_name = day_date.strftime('%a')
+            
+            count = 0
+            for row in stats['weeklyActivity']:
+                if str(row['date']) == day_str:
+                    count = row['count']
+                    break
+            
+            weekly_activity.append({
+                'day': day_name,
+                'count': count
+            })
+        
+        # Format monthly trend (last 6 months)
+        monthly_trend = []
+        for i in range(6):
+            month_date = today.replace(day=1) - timedelta(days=i*30)
+            month_key = month_date.strftime('%Y-%m')
+            month_name = month_date.strftime('%b')
+            
+            count = 0
+            for row in stats['monthlyTrend']:
+                if row['month'] == month_key:
+                    count = row['count']
+                    break
+            
+            monthly_trend.insert(0, {
+                'month': month_name,
+                'count': count
+            })
+        
+        # Calculate daily average
+        daily_average = stats['totalStories'] / 30 if stats['totalStories'] > 0 else 0
+        
+        response_data = {
+            'totalStories': stats['totalStories'],
+            'totalImages': stats['totalImages'],
+            'totalTimeSpent': stats['totalStories'] * 5,  # Estimate 5 minutes per story
+            'dailyAverage': round(daily_average, 1),
+            'weeklyActivity': weekly_activity,
+            'monthlyTrend': monthly_trend,
+            'achievements': []  # TODO: Implement achievements system
+        }
+        
+        return create_json_response(response_data)

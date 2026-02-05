@@ -254,6 +254,71 @@ class DatabaseService:
         rows = self.execute_query(query, (user_id,))
         return [GalleryStory.from_db_row(row) for row in rows]
     
+    def get_user_liked_stories(self, user_id: str) -> List[GalleryStory]:
+        """Get all stories liked by a specific user"""
+        query = """
+        SELECT gs.*, 
+               (SELECT COUNT(*) FROM story_likes sl WHERE sl.story_id = gs.id) as likes,
+               sl.created_at as liked_at
+        FROM gallery_stories gs 
+        INNER JOIN story_likes sl ON gs.id = sl.story_id 
+        WHERE sl.user_id = %s 
+        ORDER BY sl.created_at DESC
+        """
+        rows = self.execute_query(query, (user_id,))
+        stories = []
+        for row in rows:
+            story = GalleryStory.from_db_row(row)
+            # Add liked_at timestamp to the story
+            if 'liked_at' in row:
+                story.liked_at = row['liked_at']
+            stories.append(story)
+        return stories
+    
+    def get_user_statistics(self, user_id: str) -> Dict[str, Any]:
+        """Get usage statistics for a specific user"""
+        # Get total stories created
+        stories_query = "SELECT COUNT(*) as count FROM gallery_stories WHERE user_id = %s"
+        stories_result = self.execute_query(stories_query, (user_id,), fetch_one=True)
+        total_stories = stories_result['count'] if stories_result else 0
+        
+        # Get total images (sum of total_frames from all stories)
+        images_query = "SELECT SUM(total_frames) as count FROM gallery_stories WHERE user_id = %s"
+        images_result = self.execute_query(images_query, (user_id,), fetch_one=True)
+        total_images = images_result['count'] if images_result and images_result['count'] else 0
+        
+        # Get user's usage data
+        user = self.get_user_by_id(user_id)
+        daily_usage_count = user.daily_usage_count if user else 0
+        
+        # Get weekly activity (last 7 days)
+        weekly_query = """
+        SELECT DATE(created_at) as date, COUNT(*) as count
+        FROM gallery_stories
+        WHERE user_id = %s AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date DESC
+        """
+        weekly_rows = self.execute_query(weekly_query, (user_id,))
+        
+        # Get monthly trend (last 6 months)
+        monthly_query = """
+        SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count
+        FROM gallery_stories
+        WHERE user_id = %s AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+        ORDER BY month DESC
+        """
+        monthly_rows = self.execute_query(monthly_query, (user_id,))
+        
+        return {
+            'totalStories': total_stories,
+            'totalImages': total_images,
+            'dailyUsageCount': daily_usage_count,
+            'weeklyActivity': weekly_rows,
+            'monthlyTrend': monthly_rows
+        }
+    
     def reset_daily_usage(self) -> int:
         """Reset daily usage count for all users"""
         query = "UPDATE users SET daily_usage_count = 0"

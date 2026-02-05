@@ -193,11 +193,18 @@ const Header: React.FC<HeaderProps> = ({
                     My Stories
                   </Link>
                   <Link
-                    to="/settings"
+                    to="/liked-stories"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block px-4 py-3 text-sm text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-all duration-200"
                   >
-                    Settings
+                    Liked Stories
+                  </Link>
+                  <Link
+                    to="/usage-stats"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block px-4 py-3 text-sm text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 rounded-xl transition-all duration-200"
+                  >
+                    Usage Statistics
                   </Link>
                 </nav>
               )}

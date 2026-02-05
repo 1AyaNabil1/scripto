@@ -15,6 +15,10 @@ import {
 import { AuthPage } from './components/pages/AuthPage';
 import { PasswordResetPage } from './components/pages/PasswordResetPage';
 import { AdminDashboard, AdminUsers, AdminStories } from './components/pages/admin';
+import ProfileSettings from './components/pages/ProfileSettings';
+import MyStories from './components/pages/MyStories';
+import LikedStories from './components/pages/LikedStories';
+import UsageStatistics from './components/pages/UsageStatistics';
 import { ScrollToTop, ScrollToTopButton, RedirectTo404 } from './components/common';
 
 // Main App Component with Router Navigation
@@ -108,6 +112,31 @@ function AppContent() {
               <Route path="/try-app" element={
                 <div className="pt-20 pb-12">
                   <TryApp user={user} />
+                </div>
+              } />
+              
+              {/* User Profile Routes - Require Authentication */}
+              <Route path="/profile" element={
+                <div className="pt-20 pb-12">
+                  <ProfileSettings />
+                </div>
+              } />
+              
+              <Route path="/my-stories" element={
+                <div className="pt-20 pb-12">
+                  <MyStories />
+                </div>
+              } />
+              
+              <Route path="/liked-stories" element={
+                <div className="pt-20 pb-12">
+                  <LikedStories />
+                </div>
+              } />
+              
+              <Route path="/usage-stats" element={
+                <div className="pt-20 pb-12">
+                  <UsageStatistics />
                 </div>
               } />
               

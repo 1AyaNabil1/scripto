@@ -99,6 +99,16 @@ def get_user_stories(req: func.HttpRequest) -> func.HttpResponse:
     """Get all stories by a specific user."""
     return GalleryHandler.get_user_stories(req)
 
+@app.route(route="user/{userId}/liked-stories", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def get_user_liked_stories(req: func.HttpRequest) -> func.HttpResponse:
+    """Get all stories liked by a specific user."""
+    return GalleryHandler.get_user_liked_stories(req)
+
+@app.route(route="user/{userId}/statistics", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def get_user_statistics(req: func.HttpRequest) -> func.HttpResponse:
+    """Get usage statistics for a specific user."""
+    return GalleryHandler.get_user_statistics(req)
+
 # Manual reset endpoint for testing
 @app.route(route="reset-daily-usage", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def reset_daily_usage_manual(req: func.HttpRequest) -> func.HttpResponse:

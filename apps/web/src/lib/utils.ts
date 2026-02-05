@@ -231,6 +231,19 @@ class ApiClient {
     });
   }
 
+  // User Stories API Methods
+  async getUserStories(userId: string): Promise<any[]> {
+    return this.request(`/user/${userId}/stories`);
+  }
+
+  async getUserLikedStories(userId: string): Promise<any[]> {
+    return this.request(`/user/${userId}/liked-stories`);
+  }
+
+  async getUserStatistics(userId: string): Promise<any> {
+    return this.request(`/user/${userId}/statistics`);
+  }
+
   async exportStoryboard(project: StoryboardProject, format: 'pdf' | 'json' = 'pdf'): Promise<Blob> {
     if (format === 'pdf') {
       // Import jsPDF dynamically to avoid SSR issues

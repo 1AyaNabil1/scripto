@@ -16,6 +16,10 @@ export { default as Gallery } from './pages/Gallery';
 export { default as About } from './pages/About';
 export { default as StoryPage } from './pages/StoryPage';
 export { default as NotFound } from './pages/NotFound';
+export { default as ProfileSettings } from './pages/ProfileSettings';
+export { default as MyStories } from './pages/MyStories';
+export { default as LikedStories } from './pages/LikedStories';
+export { default as UsageStatistics } from './pages/UsageStatistics';
 
 // Feature Components
 export { default as StoryInput } from './features/StoryInput';

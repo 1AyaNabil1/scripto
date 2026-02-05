@@ -200,45 +200,37 @@ const UserMenu: React.FC<UserMenuProps> = ({ className = '' }) => {
               <Link
                 to="/profile"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center px-4 py-2 text-sm text-neutral-400 cursor-not-allowed opacity-50"
-                aria-disabled="true"
+                className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors duration-200"
               >
-                <UserCircle className="w-4 h-4 mr-3 text-neutral-400" />
+                <UserCircle className="w-4 h-4 mr-3 text-neutral-600" />
                 Profile Settings
-                <span className="ml-auto text-xs text-neutral-400">Soon</span>
               </Link>
               
               <Link
                 to="/my-stories"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center px-4 py-2 text-sm text-neutral-400 cursor-not-allowed opacity-50"
-                aria-disabled="true"
+                className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors duration-200"
               >
-                <History className="w-4 h-4 mr-3 text-neutral-400" />
+                <History className="w-4 h-4 mr-3 text-neutral-600" />
                 My Stories
-                <span className="ml-auto text-xs text-neutral-400">Soon</span>
               </Link>
               
               <Link
                 to="/liked-stories"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center px-4 py-2 text-sm text-neutral-400 cursor-not-allowed opacity-50"
-                aria-disabled="true"
+                className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors duration-200"
               >
-                <Heart className="w-4 h-4 mr-3 text-neutral-400" />
+                <Heart className="w-4 h-4 mr-3 text-neutral-600" />
                 Liked Stories
-                <span className="ml-auto text-xs text-neutral-400">Soon</span>
               </Link>
               
               <Link
                 to="/usage-stats"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center px-4 py-2 text-sm text-neutral-400 cursor-not-allowed opacity-50"
-                aria-disabled="true"
+                className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors duration-200"
               >
-                <BarChart3 className="w-4 h-4 mr-3 text-neutral-400" />
+                <BarChart3 className="w-4 h-4 mr-3 text-neutral-600" />
                 Usage Statistics
-                <span className="ml-auto text-xs text-neutral-400">Soon</span>
               </Link>
               
               <hr className="my-1 border-neutral-100" />
