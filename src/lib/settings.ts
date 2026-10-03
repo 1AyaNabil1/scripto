@@ -68,7 +68,7 @@ export function isValidModelId(value: unknown): value is string {
   return typeof value === 'string' && MODEL_ID_PATTERN.test(value.trim());
 }
 
-function safeStorage(): Storage | null {
+export function safeStorage(): Storage | null {
   try {
     return typeof window === 'undefined' ? null : window.localStorage;
   } catch {
