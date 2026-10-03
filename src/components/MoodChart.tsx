@@ -70,7 +70,12 @@ export function MoodChart({ scenes, rtl, lang }: Props) {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   {active === i && (
-                    <span className={`arc-tooltip level-${scene.intensity}`} role="presentation" aria-hidden="true">
+                    <span
+                      className={`arc-tooltip level-${scene.intensity}`}
+                      dir="ltr"
+                      role="presentation"
+                      aria-hidden="true"
+                    >
                       <strong>{scene.intensity}/5</strong>
                       <span>
                         Scene {String(i + 1).padStart(2, '0')} · {mood}

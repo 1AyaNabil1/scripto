@@ -245,15 +245,17 @@ export interface DemoEntry {
   id: string;
   label: string;
   blurb: string;
+  language: string;
   direction: Storyboard['direction'];
 }
 
 const DEMOS: readonly DemoData[] = [CLOCKMAKER, BOTTLE];
 
-export const DEMO_ENTRIES: readonly DemoEntry[] = DEMOS.map(({ id, label, blurb, direction }) => ({
+export const DEMO_ENTRIES: readonly DemoEntry[] = DEMOS.map(({ id, label, blurb, language, direction }) => ({
   id,
   label,
   blurb,
+  language,
   direction,
 }));
 
