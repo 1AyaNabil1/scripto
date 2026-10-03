@@ -2,8 +2,8 @@
 
 **Turn a story into a storyboard, in your browser.** Paste a short story or plot and Scripto splits it into scenes, each with a camera shot, a mood, the characters and setting, and a line of dialogue or narration. Then it draws a frame for every scene in one consistent visual style.
 
-**Live demo:** https://1ayanabil1.github.io/scripto/
-(open a sample directly: [English](https://1ayanabil1.github.io/scripto/?demo=clockmaker) · [Arabic, right to left](https://1ayanabil1.github.io/scripto/?demo=bottle))
+**Live demo:** https://moviconexus.me/scripto/
+(open a sample directly: [English](https://moviconexus.me/scripto/?demo=clockmaker) · [Arabic, right to left](https://moviconexus.me/scripto/?demo=bottle))
 
 Scripto is a static site with no backend. It calls Google's Gemini API straight from your browser with **your own API key**, which stays in your browser. Without a key it runs in demo mode with two sample storyboards.
 
@@ -87,7 +87,7 @@ Everything is set in the in-app **Settings** dialog and saved in `localStorage`.
 
 The default model IDs were checked in October 2026 against Google's [models](https://ai.google.dev/gemini-api/docs/models), [thinking](https://ai.google.dev/gemini-api/docs/thinking), [structured output](https://ai.google.dev/gemini-api/docs/structured-output), [image generation](https://ai.google.dev/gemini-api/docs/image-generation) and [pricing](https://ai.google.dev/gemini-api/docs/pricing) pages. Models change often. If one is retired, choose another in Settings. No code change is needed.
 
-The site is built for `https://1ayanabil1.github.io/scripto/`, so Vite's `base` is `/scripto/` (see `vite.config.ts`).
+The site is built for `https://moviconexus.me/scripto/`, so Vite's `base` is `/scripto/` (see `vite.config.ts`).
 
 ## Your API key and privacy
 
