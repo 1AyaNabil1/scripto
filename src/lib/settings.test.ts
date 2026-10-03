@@ -134,3 +134,9 @@ describe('isValidModelId', () => {
     }
   });
 });
+
+describe('defaults', () => {
+  it('starts with images off, since Gemini image models need a paid-tier key', () => {
+    expect(DEFAULT_SETTINGS.generateImages).toBe(false);
+  });
+});

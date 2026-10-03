@@ -80,7 +80,7 @@ Everything is set in the in-app **Settings** dialog and saved in `localStorage`.
 | --- | --- | --- |
 | Text model | `gemini-3.8-flash` | Writes the scenes. Stable, available on the free tier. Any model ID that supports structured output works. |
 | Thinking level | `low` | Sent as `generation_config.thinking_level`. `gemini-3.8-flash` accepts low, medium and high; the Flash-Lite models also accept minimal. "Model default" omits it. |
-| Generate images | on | Gemini image models need a **paid-tier** key. Turn this off to use placeholder frames only. |
+| Generate images | off | Gemini image models need a **paid-tier** key, so this starts off and frames are drawn as placeholders. Turn it on with a paid key. |
 | Image model | `gemini-3.1-flash-image` | Also offered: `gemini-3.1-flash-lite-image` (cheapest, 1K only) and `gemini-3-pro-image` (highest quality). |
 | Image size | `1K` | `2K` is sharper and costs more. The Lite model always uses 1K. |
 | Style reference | on | Attaches the first finished frame to later image requests to keep the look consistent. |

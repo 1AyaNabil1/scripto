@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   textModel: 'gemini-3.8-flash',
   imageModel: 'gemini-3.1-flash-image',
   thinkingLevel: 'low',
-  generateImages: true,
+  generateImages: false, // image models need a paid-tier key; text works on the free tier
   imageSize: '1K',
   useStyleReference: true,
 });

@@ -132,7 +132,7 @@ describe('settings dialog', () => {
     await user.click(within(dialog).getByLabelText(/generate an image for each scene/i));
     await user.click(within(dialog).getByRole('button', { name: 'Save settings' }));
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEYS.settings) ?? '{}');
-    expect(saved).toMatchObject({ textModel: 'gemini-3.5-flash-lite', thinkingLevel: 'minimal', generateImages: false });
+    expect(saved).toMatchObject({ textModel: 'gemini-3.5-flash-lite', thinkingLevel: 'minimal', generateImages: true });
   });
 
   it('refuses invalid model IDs', async () => {
@@ -170,6 +170,7 @@ describe('generating a storyboard', () => {
 
   it('draws a frame for every scene when images are on', async () => {
     useKey();
+    setSettings({ generateImages: true });
     const fetchMock = stubFetch(
       mockFetch(
         jsonResponse(textInteraction(JSON.stringify(storyboardJson(3)))),
@@ -224,6 +225,7 @@ describe('generating a storyboard', () => {
 
   it('falls back to placeholders and explains when image generation hits a quota', async () => {
     useKey();
+    setSettings({ generateImages: true });
     stubFetch(
       mockFetch(
         jsonResponse(textInteraction(JSON.stringify(storyboardJson(3)))),
