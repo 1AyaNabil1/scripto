@@ -2,28 +2,27 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { onTestFinished } from 'vitest';
 import App from './App';
+import { createSiteHost } from './host/site';
 import { hostImpl as zibbyHost } from './host/zibby';
 import type { HostImpl } from './host/types';
 import type { AiBackend } from './lib/backend';
 import { ScriptoError } from './lib/errors';
 import { STORAGE_KEYS } from './lib/settings';
-import {
-  googleError,
-  imageInteraction,
-  jsonResponse,
-  mockFetch,
-  PNG_BASE64,
-  requestBody,
-  storyboardJson,
-  TEST_KEY,
-  textInteraction,
-} from './test/fetchMocks';
+import { jsonResponse, mockFetch, PNG_BASE64, requestBody, storyboardJson } from './test/fetchMocks';
 
 const STORY =
   'Lina folds a paper boat on a rainy morning and sets it on the gutter stream. She runs after it through the town until it reaches the sea.';
 
-function useKey(key = TEST_KEY) {
-  window.localStorage.setItem(STORAGE_KEYS.apiKey, key);
+/** The free site with a scene writer; each test stubs fetch for it. */
+const API = 'https://scripto-api.test';
+const siteImpl = () => createSiteHost(API);
+
+function writerAnswer(text = JSON.stringify(storyboardJson(3))) {
+  return jsonResponse({ text });
+}
+
+function writerRefusal(kind: string, status: number, retryAfter?: number) {
+  return jsonResponse({ error: retryAfter === undefined ? { kind } : { kind, retryAfter } }, status);
 }
 
 function setSettings(settings: Record<string, unknown>) {
@@ -57,7 +56,10 @@ describe('first visit', () => {
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: 'Your story. Every frame.' })).toBeInTheDocument();
     expect(tab('Story')).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('button', { name: 'No key' })).toBeInTheDocument();
+    expect(screen.getByTitle(/scenes are free here/i)).toHaveTextContent('Free');
+    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Draw frames' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Google Gemini’s free tier, which may use what you send/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /the clockmaker of lantern street/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /the last lighthouse/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /share yours here/i })).toHaveAttribute('target', '_blank');
@@ -73,12 +75,15 @@ describe('first visit', () => {
     expect(screen.getByLabelText<HTMLTextAreaElement>('Your story').value).toContain('cleaning robot');
   });
 
-  it('opens Settings instead of generating when there is no key', async () => {
+  it('says so when this copy has no scene writer, without asking for a key', async () => {
+    const fetchMock = stubFetch(mockFetch());
     const user = userEvent.setup();
     render(<App />);
     await user.type(screen.getByLabelText('Your story'), STORY);
     await user.click(screen.getByRole('button', { name: /make storyboard/i }));
-    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Scenes are offline here');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('shows an empty board with samples before anything is made', async () => {
@@ -106,9 +111,9 @@ describe('sample boards', () => {
     expect(screen.getByRole('heading', { name: 'A silent music box' })).toBeInTheDocument();
     expect(screen.getByText(/It hasn’t made a sound since she died/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /emotional arc across 6 scenes.*peaking at scene 5/i })).toBeInTheDocument();
-    const draw = screen.getByRole('button', { name: 'Generate frame for scene 1' });
-    expect(draw).toBeDisabled();
-    expect(draw).toHaveAttribute('title', expect.stringMatching(/add your api key/i));
+    // Frames are not drawn on the free site, so there is nothing to draw them with.
+    expect(screen.queryByRole('button', { name: 'Generate frame for scene 1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^draw/i })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -172,166 +177,75 @@ describe('sample boards', () => {
   });
 });
 
-describe('settings (own key)', () => {
-  it('walks through creating a key, saves it in this browser and forgets it', async () => {
+describe('making a storyboard on the free site', () => {
+  it('sends only the story, the count and the look, and keeps sketches', async () => {
+    setSettings({ generateImages: true }); // left over from the old own-key version: ignored here
+    const fetchMock = stubFetch(mockFetch(writerAnswer()));
     const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Settings' }));
-    const dialog = screen.getByRole('dialog', { name: 'Settings' });
-    expect(within(dialog).getByRole('link', { name: 'aistudio.google.com/apikey' })).toHaveAttribute(
-      'href',
-      'https://aistudio.google.com/apikey',
-    );
-    expect(within(dialog).getByText(/Stays in this browser. Sent only to Google./)).toBeInTheDocument();
-
-    await user.type(within(dialog).getByLabelText('Your API key'), TEST_KEY);
-    await user.click(within(dialog).getByRole('button', { name: 'Save key' }));
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBe(TEST_KEY);
-    expect(within(dialog).getByText('••••••••t123')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Key saved' })).toBeInTheDocument();
-
-    await user.click(within(dialog).getByRole('button', { name: /forget key/i }));
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBeNull();
-    expect(screen.getByRole('button', { name: 'No key' })).toBeInTheDocument();
-  });
-
-  it('rejects text that is clearly not a key', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Settings' }));
-    const dialog = screen.getByRole('dialog', { name: 'Settings' });
-    await user.type(within(dialog).getByLabelText('Your API key'), 'hello');
-    await user.click(within(dialog).getByRole('button', { name: 'Save key' }));
-    expect(within(dialog).getByText(/does not look like a Gemini API key/)).toBeInTheDocument();
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBeNull();
-  });
-
-  it('saves frame switches at once and models on save', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Settings' }));
-    const dialog = screen.getByRole('dialog', { name: 'Settings' });
-    await user.click(within(dialog).getByRole('switch', { name: /draw frames after the scenes/i }));
-    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.settings) ?? '{}')).toMatchObject({ generateImages: true });
-
-    await user.click(within(dialog).getByText('Models'));
-    const textModel = within(dialog).getByLabelText('Text model');
-    await user.clear(textModel);
-    await user.type(textModel, 'gemini-3.5-flash-lite');
-    await user.selectOptions(within(dialog).getByLabelText('Thinking level'), 'minimal');
-    await user.click(within(dialog).getByRole('button', { name: 'Save models' }));
-    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.settings) ?? '{}')).toMatchObject({
-      textModel: 'gemini-3.5-flash-lite',
-      thinkingLevel: 'minimal',
-      generateImages: true,
-    });
-  });
-
-  it('refuses invalid model IDs', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Settings' }));
-    const dialog = screen.getByRole('dialog', { name: 'Settings' });
-    await user.click(within(dialog).getByText('Models'));
-    const textModel = within(dialog).getByLabelText('Text model');
-    await user.clear(textModel);
-    await user.type(textModel, 'not a model');
-    await user.click(within(dialog).getByRole('button', { name: 'Save models' }));
-    expect(within(dialog).getByRole('alert')).toHaveTextContent(/letters, numbers, dots and dashes/);
-  });
-});
-
-describe('making a storyboard with your own key', () => {
-  it('builds the board from the model’s JSON and keeps sketches when frames are off', async () => {
-    useKey();
-    setSettings({ generateImages: false });
-    const fetchMock = stubFetch(mockFetch(jsonResponse(textInteraction(JSON.stringify(storyboardJson(3))))));
-    const user = userEvent.setup();
-    render(<App />);
+    render(<App impl={siteImpl()} />);
     await writeStory(user);
 
     expect(await screen.findByRole('heading', { level: 1, name: 'The Paper Boat' })).toBeInTheDocument();
     expect(tab('Board')).toHaveAttribute('aria-current', 'page');
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(requestBody(fetchMock)).toMatchObject({
-      model: 'gemini-3.8-flash',
-      store: false,
-      generation_config: { thinking_level: 'low' },
-    });
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe(`${API}/api/storyboard`);
+    expect(requestBody(fetchMock)).toEqual({ story: STORY, sceneCount: 3, styleId: 'sketch' });
+    expect(JSON.stringify(init?.headers)).not.toMatch(/key/i);
     expect(screen.getAllByRole('img', { name: /^placeholder frame/i })).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: /^draw/i })).not.toBeInTheDocument();
   });
 
-  it('draws a frame for every scene when frames are on', async () => {
-    useKey();
-    setSettings({ generateImages: true });
-    const fetchMock = stubFetch(
-      mockFetch(
-        jsonResponse(textInteraction(JSON.stringify(storyboardJson(3)))),
-        jsonResponse(imageInteraction()),
-        jsonResponse(imageInteraction()),
-        jsonResponse(imageInteraction()),
-      ),
-    );
+  it('explains when the shared free quota is used up', async () => {
+    stubFetch(mockFetch(writerRefusal('quota', 429)));
     const user = userEvent.setup();
-    render(<App />);
-    await writeStory(user);
-
-    await waitFor(() => {
-      expect(screen.getAllByRole('img', { name: /^frame for scene/i })).toHaveLength(3);
-    });
-    for (const img of screen.getAllByRole('img', { name: /^frame for scene/i })) {
-      expect(img).toHaveAttribute('src', `data:image/png;base64,${PNG_BASE64}`);
-    }
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(requestBody(fetchMock, 1)).toMatchObject({ model: 'gemini-3.1-flash-image', store: false });
-    expect(screen.getByRole('button', { name: /all drawn/i })).toBeDisabled();
-  });
-
-  it('explains a rejected key without showing it', async () => {
-    useKey();
-    stubFetch(
-      mockFetch(
-        jsonResponse(googleError(400, 'INVALID_ARGUMENT', 'API key not valid. Please pass a valid API key.', 'API_KEY_INVALID'), 400),
-      ),
-    );
-    const user = userEvent.setup();
-    render(<App />);
+    render(<App impl={siteImpl()} />);
     await writeStory(user);
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('API key not accepted');
-    expect(alert).not.toHaveTextContent(TEST_KEY);
+    expect(alert).toHaveTextContent('Quota reached');
+    expect(alert).toHaveTextContent(/free Google quota that every visitor shares/);
+  });
+
+  it('asks a visitor who made several in a row to wait a minute', async () => {
+    stubFetch(mockFetch(writerRefusal('rate', 429, 40)));
+    const user = userEvent.setup();
+    render(<App impl={siteImpl()} />);
+    await writeStory(user);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('One moment');
+    expect(alert).toHaveTextContent(/Wait a minute/);
+  });
+
+  it('explains why it cannot write scenes in the EU, the UK or Switzerland', async () => {
+    stubFetch(mockFetch(writerRefusal('region', 451)));
+    const user = userEvent.setup();
+    render(<App impl={siteImpl()} />);
+    await writeStory(user);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Not available where you are');
+    expect(alert).toHaveTextContent(/EU, the UK or Switzerland/);
   });
 
   it('handles malformed model output without crashing', async () => {
-    useKey();
-    stubFetch(mockFetch(jsonResponse(textInteraction('Sorry, here is a poem instead.'))));
+    stubFetch(mockFetch(writerAnswer('Sorry, here is a poem instead.')));
     const user = userEvent.setup();
-    render(<App />);
+    render(<App impl={siteImpl()} />);
     await writeStory(user);
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not read the storyboard');
   });
 
-  it('keeps sketches and explains when frames hit a quota', async () => {
-    useKey();
-    setSettings({ generateImages: true });
-    stubFetch(
-      mockFetch(
-        jsonResponse(textInteraction(JSON.stringify(storyboardJson(3)))),
-        jsonResponse(googleError(429, 'RESOURCE_EXHAUSTED', 'limit: 0'), 429),
-      ),
-    );
+  it('says when the scene writer cannot be reached', async () => {
+    stubFetch(mockFetch(new TypeError('Failed to fetch')));
     const user = userEvent.setup();
-    render(<App />);
+    render(<App impl={siteImpl()} />);
     await writeStory(user);
-    expect(await screen.findByRole('alert')).toHaveTextContent(/paid-tier key/);
-    expect(screen.getAllByRole('img', { name: /^placeholder frame/i })).toHaveLength(3);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Could not reach Scripto’s scene writer/);
   });
 
-  it('asks for a longer story before calling the API', async () => {
-    useKey();
+  it('asks for a longer story before calling the scene writer', async () => {
     const fetchMock = stubFetch(mockFetch());
     const user = userEvent.setup();
-    render(<App />);
+    render(<App impl={siteImpl()} />);
     await user.type(screen.getByLabelText('Your story'), 'Too short.');
     expect(screen.getByRole('button', { name: /make storyboard/i })).toBeDisabled();
     expect(screen.getByText(/at least 40 characters/)).toBeInTheDocument();
@@ -452,8 +366,21 @@ describe('on Zibby', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'The Paper Boat' })).toBeInTheDocument();
     expect(await screen.findByText('Charged 37 credits.')).toBeInTheDocument();
     expect(screen.getAllByRole('img', { name: /^frame for scene/i })).toHaveLength(3);
+  });
+
+  it('saves frame switches and models from the Settings drawer', async () => {
+    const { backend } = zibbyBackend();
+    const user = userEvent.setup();
+    render(<App impl={zibbyImpl()} backend={backend} />);
     await user.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(within(screen.getByRole('dialog', { name: 'Settings' })).queryByLabelText('Your API key')).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Settings' });
+    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('switch', { name: /draw frames after the scenes/i }));
+    await user.selectOptions(within(dialog).getByLabelText('Scenes'), 'claude-opus-5');
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.settings) ?? '{}')).toMatchObject({
+      generateImages: false,
+      textModel: 'claude-opus-5',
+    });
   });
 
   it('asks before going past the spending cap, then resends with the cap acknowledged', async () => {

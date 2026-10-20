@@ -18,5 +18,5 @@
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["vite.config.ts", "src/lib/csp.ts", "src/vite-env.d.ts"]
+  "include": ["vite.config.ts", "vite.proxy.config.ts", "src/lib/csp.ts", "src/server/vercel.ts", "src/vite-env.d.ts"]
 }

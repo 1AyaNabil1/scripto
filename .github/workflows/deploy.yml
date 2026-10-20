@@ -38,6 +38,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Set under Settings → Secrets and variables → Actions → Variables. Both are public addresses, not secrets.
+          VITE_SCRIPTO_API: ${{ vars.SCRIPTO_API_URL }}
+          VITE_ZIBBY_URL: ${{ vars.ZIBBY_URL }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

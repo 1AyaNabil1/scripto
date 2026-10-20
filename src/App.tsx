@@ -29,16 +29,7 @@ import {
   saveStoryboardLocally,
   saveStoryboardWithFrames,
 } from './lib/persist';
-import {
-  forgetApiKey,
-  loadApiKey,
-  loadSettings,
-  safeStorage,
-  sanitizeSettings,
-  saveApiKey,
-  saveSettings,
-  type Settings,
-} from './lib/settings';
+import { loadSettings, safeStorage, sanitizeSettings, saveSettings, type Settings } from './lib/settings';
 import { DEFAULT_STYLE_ID } from './lib/styles';
 import type { SceneCountChoice, Storyboard } from './lib/types';
 import { boardReducer, type BoardState, type EditableSceneFields } from './state/board';
@@ -91,7 +82,6 @@ interface AppProps {
 export default function App({ impl = defaultHostImpl, backend: backendOverride }: AppProps) {
   const host = impl.host;
   const [settings, setSettings] = useState<Settings>(() => loadSettings(safeStorage(), host));
-  const [apiKey, setApiKey] = useState<string>(() => (host === 'byok' ? loadApiKey() : ''));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [board, dispatch] = useReducer(boardReducer, undefined, initialBoard);
   const [tab, setTab] = useState<TabId>(() =>
@@ -122,11 +112,12 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
     storyboardRef.current = storyboard;
   }, [storyboard]);
 
-  const backend = useMemo(() => backendOverride ?? impl.createBackend(apiKey), [backendOverride, impl, apiKey]);
+  const backend = useMemo(() => backendOverride ?? impl.createBackend(), [backendOverride, impl]);
   const storyQuote = impl.useQuote('storyboard');
   const frameQuote = impl.useQuote('frame');
   const comped = impl.useComped();
-  const canRun = host === 'zibby' || Boolean(apiKey);
+  const canRun = backend !== null;
+  const drawsFrames = impl.drawsFrames && settings.generateImages;
 
   // Frames are too big for localStorage, so the board with its frames comes back from IndexedDB.
   useEffect(() => {
@@ -229,7 +220,7 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
   const missingFrames = () => (storyboardRef.current?.scenes ?? []).filter((s) => !s.image).map((s) => s.id);
 
   const runFrames = async (target: Storyboard, sceneIds: string[], controller: AbortController, capAck = false) => {
-    if (sceneIds.length === 0) return;
+    if (!backend || !impl.drawsFrames || sceneIds.length === 0) return;
     setBusy('drawing');
     let finished = 0;
     const total = sceneIds.length;
@@ -244,7 +235,6 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
       sceneIds,
       settings,
       backend,
-      apiKey,
       signal: controller.signal,
       capAck,
       onCharge,
@@ -284,8 +274,11 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
       setError(toFriendlyError(err));
       return;
     }
-    if (!canRun) {
-      setSettingsOpen(true);
+    if (!backend) {
+      setError({
+        title: 'Scenes are offline here',
+        message: 'This copy of Scripto has no scene writer set up. The samples below still open.',
+      });
       return;
     }
     const controller = startController();
@@ -299,7 +292,6 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
         styleId,
         settings,
         backend,
-        apiKey,
         signal: controller.signal,
         capAck,
         onCharge,
@@ -310,7 +302,7 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
       }
       announce(`Storyboard ready: ${result.storyboard.scenes.length} scenes.`);
       goTo('board');
-      if (settings.generateImages) {
+      if (drawsFrames) {
         await runFrames(
           result.storyboard,
           result.storyboard.scenes.map((s) => s.id),
@@ -442,23 +434,6 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
     announce('Scene saved.');
   };
 
-  const handleSaveKey = (key: string) => {
-    const stored = saveApiKey(key);
-    setApiKey(key);
-    if (!stored) {
-      setError({
-        title: 'Key not stored',
-        message: 'This browser blocked local storage, so the key will only last until you close this tab.',
-      });
-    }
-  };
-
-  const handleForgetKey = () => {
-    forgetApiKey();
-    setApiKey('');
-    announce('API key removed from this browser.');
-  };
-
   const handleSaveSettings = (next: Settings) => {
     saveSettings(next, safeStorage(), host);
     setSettings(sanitizeSettings(next, host));
@@ -466,18 +441,13 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
 
   const frames = sceneCount === 'auto' ? 6 : sceneCount;
   const makeChip =
-    host === 'zibby'
-      ? comped || storyQuote === null || frameQuote === null
-        ? null
-        : `~${storyQuote + (settings.generateImages ? frames * frameQuote : 0)} cr`
-      : apiKey
-        ? null
-        : 'add key';
+    host === 'zibby' && !comped && storyQuote !== null && frameQuote !== null
+      ? `~${storyQuote + (settings.generateImages ? frames * frameQuote : 0)} cr`
+      : null;
 
   const firstTry: FirstTry =
     host === 'zibby'
       ? {
-          free: true,
           title: ['One story,', 'six real frames.'],
           line: 'New Zibby accounts get 200 free credits. No key, no card.',
           href: null,
@@ -485,22 +455,26 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
         }
       : ZIBBY_APP_URL
         ? {
-            free: true,
-            title: ['One story,', 'six real frames.'],
-            line: 'Free on Zibby: new accounts get 200 credits. No key, no card.',
+            title: ['Free scenes here.', 'Frames on Zibby.'],
+            line: 'No key, no sign-up. Frames stay as sketches here; on Zibby every one is drawn, and new accounts get 200 free credits.',
             href: ZIBBY_APP_URL,
             cta: 'Try it on Zibby',
           }
         : {
-            free: false,
-            title: ['Two minutes,', 'once.'],
-            line: 'Bring a Gemini key and frames are drawn on your own Google account.',
+            title: ['No key,', 'no sign-up.'],
+            line: 'Paste a story and Scripto writes every scene. Frames stay as sketches for now.',
             href: null,
-            cta: 'Add your key',
+            cta: '',
           };
 
+  /** Google's free tier may use what is sent to improve its products, so visitors should know. */
+  const makeNote =
+    host === 'site'
+      ? 'Scenes are written by Google Gemini’s free tier, which may use what you send to improve Google’s products. Don’t paste anything private.'
+      : null;
+
   const canGenerate = canRun && !busy;
-  const generateHint = !canRun ? 'Add your API key in Settings to draw frames.' : 'Wait for the current run to finish.';
+  const generateHint = 'Wait for the current run to finish.';
 
   const errorActions =
     error?.kind === 'credits' ? (
@@ -523,6 +497,10 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
       >
         Sign in to Zibby
       </button>
+    ) : ZIBBY_APP_URL && (error?.kind === 'rate' || error?.kind === 'quota' || error?.kind === 'region') ? (
+      <a className="button primary small" href={ZIBBY_APP_URL} target="_blank" rel="noreferrer noopener">
+        Try it on Zibby <Icon name="external" size={12} />
+      </a>
     ) : error?.kind === 'cap' && retry ? (
       <>
         <button
@@ -571,17 +549,14 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
       <Header
         tab={tab}
         onTab={goTo}
-        status={
-          <impl.Status
-            apiKey={apiKey}
-            onOpenSettings={() => {
-              setSettingsOpen(true);
-            }}
-          />
+        status={<impl.Status />}
+        onOpenSettings={
+          host === 'zibby'
+            ? () => {
+                setSettingsOpen(true);
+              }
+            : undefined
         }
-        onOpenSettings={() => {
-          setSettingsOpen(true);
-        }}
       />
 
       <main id="main" tabIndex={-1}>
@@ -648,21 +623,18 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
             onStyleChange={setStyleId}
             sceneCount={sceneCount}
             onSceneCountChange={setSceneCount}
-            drawFrames={settings.generateImages}
+            drawFrames={impl.drawsFrames ? settings.generateImages : null}
             onToggleFrames={() => {
               handleSaveSettings({ ...settings, generateImages: !settings.generateImages });
             }}
             busy={busy !== null}
-            canRun={canRun}
             makeChip={makeChip}
+            makeNote={makeNote}
             firstTry={firstTry}
             onGenerate={() => {
               void handleGenerate();
             }}
             onCancel={handleCancel}
-            onOpenSettings={() => {
-              setSettingsOpen(true);
-            }}
             onPickDemo={handleDemo}
           />
         )}
@@ -673,6 +645,7 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
               frames={board.frames}
               layout={layout}
               onLayoutChange={setLayout}
+              drawsFrames={impl.drawsFrames}
               canGenerate={canGenerate}
               generateHint={generateHint}
               frameQuote={host === 'zibby' && !comped ? frameQuote : null}
@@ -735,18 +708,16 @@ export default function App({ impl = defaultHostImpl, backend: backendOverride }
         </a>
       </footer>
 
-      <SettingsDialog
-        open={settingsOpen}
-        onClose={() => {
-          setSettingsOpen(false);
-        }}
-        host={host}
-        apiKey={apiKey}
-        settings={settings}
-        onSaveKey={handleSaveKey}
-        onForgetKey={handleForgetKey}
-        onSaveSettings={handleSaveSettings}
-      />
+      {host === 'zibby' && (
+        <SettingsDialog
+          open={settingsOpen}
+          onClose={() => {
+            setSettingsOpen(false);
+          }}
+          settings={settings}
+          onSaveSettings={handleSaveSettings}
+        />
+      )}
 
       <p className="visually-hidden" aria-live="polite" aria-atomic="true">
         {announcement}

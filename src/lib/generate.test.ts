@@ -9,7 +9,7 @@ import {
   TEST_KEY,
   textInteraction,
 } from '../test/fetchMocks';
-import type { AiBackend } from './backend';
+import { createGeminiBackend, type AiBackend } from './backend';
 import { ScriptoError } from './errors';
 import { generateFrame, generateFrames, generateStoryboard, validateStoryInput } from './generate';
 import { DEFAULT_SETTINGS, type Settings } from './settings';
@@ -19,6 +19,9 @@ const STORY =
   'Lina folds a paper boat on a rainy morning and sets it on the gutter stream. She runs after it through the town, past the baker and the bridge, until it reaches the sea.';
 
 const settings: Settings = { ...DEFAULT_SETTINGS };
+
+/** Gemini itself, as the scene writer's server calls it. */
+const gemini = (fetchImpl: typeof fetch) => createGeminiBackend({ apiKey: TEST_KEY, fetchImpl });
 
 async function failure(promise: Promise<unknown>): Promise<ScriptoError> {
   try {
@@ -37,8 +40,7 @@ async function makeStoryboard(sceneCount = 3): Promise<Storyboard> {
     sceneCount,
     styleId: 'sketch',
     settings,
-    apiKey: TEST_KEY,
-    fetchImpl: fetchMock,
+    backend: gemini(fetchMock),
   });
   return storyboard;
 }
@@ -65,8 +67,7 @@ describe('generateStoryboard', () => {
       sceneCount: 3,
       styleId: 'watercolor',
       settings: { ...settings, textModel: 'gemini-3.5-flash-lite' },
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
     });
 
     const body = requestBody(fetchMock);
@@ -97,8 +98,7 @@ describe('generateStoryboard', () => {
       sceneCount: 3,
       styleId: 'sketch',
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
     });
     expect(storyboard.direction).toBe('rtl');
     expect(storyboard.language).toBe('ar');
@@ -107,7 +107,7 @@ describe('generateStoryboard', () => {
   it('handles malformed model output with a parse error', async () => {
     const fetchMock = mockFetch(jsonResponse(textInteraction('I could not do that, sorry!')));
     const error = await failure(
-      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, apiKey: TEST_KEY, fetchImpl: fetchMock }),
+      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, backend: gemini(fetchMock) }),
     );
     expect(error.kind).toBe('parse');
   });
@@ -115,7 +115,7 @@ describe('generateStoryboard', () => {
   it('handles an empty answer', async () => {
     const fetchMock = mockFetch(jsonResponse({ status: 'completed', steps: [] }));
     const error = await failure(
-      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, apiKey: TEST_KEY, fetchImpl: fetchMock }),
+      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, backend: gemini(fetchMock) }),
     );
     expect(error.kind).toBe('bad-response');
     expect(error.message).toMatch(/safety filters/);
@@ -124,7 +124,7 @@ describe('generateStoryboard', () => {
   it('passes API errors through', async () => {
     const fetchMock = mockFetch(jsonResponse(googleError(404, 'NOT_FOUND', 'not found'), 404));
     const error = await failure(
-      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, apiKey: TEST_KEY, fetchImpl: fetchMock }),
+      generateStoryboard({ story: STORY, sceneCount: 3, styleId: 'sketch', settings, backend: gemini(fetchMock) }),
     );
     expect(error.kind).toBe('model-not-found');
   });
@@ -132,7 +132,7 @@ describe('generateStoryboard', () => {
   it('does not call the API for invalid input', async () => {
     const fetchMock = mockFetch();
     await failure(
-      generateStoryboard({ story: 'short', sceneCount: 3, styleId: 'sketch', settings, apiKey: TEST_KEY, fetchImpl: fetchMock }),
+      generateStoryboard({ story: 'short', sceneCount: 3, styleId: 'sketch', settings, backend: gemini(fetchMock) }),
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -146,8 +146,7 @@ describe('generateFrame', () => {
       storyboard,
       sceneId: storyboard.scenes[0]!.id,
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
     });
     const body = requestBody(fetchMock);
     expect(body.model).toBe('gemini-3.1-flash-image');
@@ -160,7 +159,7 @@ describe('generateFrame', () => {
     const storyboard = await makeStoryboard();
     const fetchMock = mockFetch(jsonResponse(textInteraction('I can’t draw that.')));
     const error = await failure(
-      generateFrame({ storyboard, sceneId: storyboard.scenes[0]!.id, settings, apiKey: TEST_KEY, fetchImpl: fetchMock }),
+      generateFrame({ storyboard, sceneId: storyboard.scenes[0]!.id, settings, backend: gemini(fetchMock) }),
     );
     expect(error.kind).toBe('no-image');
     expect(error.detail).toBe('I can’t draw that.');
@@ -180,8 +179,7 @@ describe('generateFrames', () => {
       storyboard,
       sceneIds: storyboard.scenes.map((s) => s.id),
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
       onDone: (id) => done.push(id),
     });
     expect(result).toEqual({ done: 3, failed: 0, skipped: 0 });
@@ -200,8 +198,7 @@ describe('generateFrames', () => {
       storyboard,
       sceneIds: storyboard.scenes.map((s) => s.id),
       settings: { ...settings, useStyleReference: false },
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
     });
     expect(requestBody(fetchMock, 1).input).toHaveLength(1);
   });
@@ -215,8 +212,7 @@ describe('generateFrames', () => {
       storyboard,
       sceneIds: storyboard.scenes.map((s) => s.id),
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
       concurrency: 1,
       onSkip: (id) => skipped.push(id),
       onError: (id) => errors.push(id),
@@ -239,8 +235,7 @@ describe('generateFrames', () => {
       storyboard,
       sceneIds: storyboard.scenes.map((s) => s.id),
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
       concurrency: 1,
     });
     expect(result).toEqual({ done: 2, failed: 1, skipped: 0 });
@@ -259,8 +254,7 @@ describe('generateFrames', () => {
       storyboard,
       sceneIds: [storyboard.scenes[1]!.id],
       settings,
-      apiKey: TEST_KEY,
-      fetchImpl: fetchMock,
+      backend: gemini(fetchMock),
     });
     const input = requestBody(fetchMock).input as { mime_type?: string }[];
     expect(input[1]?.mime_type).toBe('image/jpeg');

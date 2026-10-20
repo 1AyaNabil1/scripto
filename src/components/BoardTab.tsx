@@ -13,6 +13,8 @@ interface Props {
   frames: Record<string, FrameStatus>;
   layout: Layout;
   onLayoutChange: (layout: Layout) => void;
+  /** False on the free site: no draw buttons, the sketches stay. */
+  drawsFrames: boolean;
   canGenerate: boolean;
   generateHint: string;
   /** Credits per frame on Zibby, for the dock's estimate; null elsewhere or for comped visitors. */
@@ -106,6 +108,7 @@ export function BoardTab(props: Props) {
                 rtl={rtl}
                 lang={lang}
                 status={props.frames[scene.id]}
+                drawsFrames={props.drawsFrames}
                 canGenerate={props.canGenerate}
                 generateHint={props.generateHint}
                 onGenerate={props.onGenerateFrame}
@@ -124,6 +127,7 @@ export function BoardTab(props: Props) {
         onLayoutChange={props.onLayoutChange}
         missing={missing}
         total={storyboard.scenes.length}
+        drawsFrames={props.drawsFrames}
         canGenerate={props.canGenerate}
         generateHint={props.generateHint}
         quote={drawQuote}

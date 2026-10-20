@@ -16,6 +16,7 @@ function useQuote(action: QuotedAction): number | null {
 
 export const hostImpl: HostImpl = {
   host: 'zibby',
+  drawsFrames: true,
   start() {
     // The mock answers locally in `npm run dev:zibby`; it is not built into production.
     if (import.meta.env.DEV) {

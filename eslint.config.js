@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  { ignores: ['dist', 'coverage', 'node_modules', 'proxy/api'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
@@ -28,6 +28,11 @@ export default tseslint.config(
       'no-console': 'error',
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
     },
+  },
+  {
+    // The scene writer logs what went wrong (a kind and a status, never a key or a story).
+    files: ['src/server/vercel.ts'],
+    rules: { 'no-console': ['error', { allow: ['error'] }] },
   },
   {
     files: ['**/*.test.{ts,tsx}', 'src/test/**'],

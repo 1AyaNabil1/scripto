@@ -3,12 +3,12 @@ import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { TABS, type TabId } from './tabs';
 
-
 interface Props {
   tab: TabId;
   onTab: (tab: TabId) => void;
   status: ReactNode;
-  onOpenSettings: () => void;
+  /** Left out where there is nothing to set (the free site). */
+  onOpenSettings?: (() => void) | undefined;
 }
 
 export function Header({ tab, onTab, status, onOpenSettings }: Props) {
@@ -34,9 +34,11 @@ export function Header({ tab, onTab, status, onOpenSettings }: Props) {
       </nav>
       <div className="topbar-actions">
         {status}
-        <button type="button" className="icon-button" onClick={onOpenSettings} aria-label="Settings" title="Settings">
-          <Icon name="sliders" />
-        </button>
+        {onOpenSettings && (
+          <button type="button" className="icon-button" onClick={onOpenSettings} aria-label="Settings" title="Settings">
+            <Icon name="sliders" />
+          </button>
+        )}
       </div>
     </header>
   );

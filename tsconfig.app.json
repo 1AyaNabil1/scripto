@@ -12,7 +12,7 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "skipLibCheck": true,
-    "paths": { "@host": ["./src/host/byok.ts"] },
+    "paths": { "@host": ["./src/host/site.ts"] },
 
     "strict": true,
     "noUnusedLocals": true,
@@ -23,5 +23,6 @@
     "exactOptionalPropertyTypes": false,
     "erasableSyntaxOnly": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/server/vercel.ts"]
 }

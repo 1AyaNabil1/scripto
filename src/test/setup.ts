@@ -2,9 +2,12 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 
+// The scene writer's tests run in Node, with no page at all.
+const hasDom = typeof window !== 'undefined';
+
 // jsdom does not implement <dialog> methods; give it just enough behaviour.
-const dialogProto = HTMLDialogElement.prototype as Partial<HTMLDialogElement>;
-if (typeof dialogProto.showModal !== 'function') {
+const dialogProto = hasDom ? (HTMLDialogElement.prototype as Partial<HTMLDialogElement>) : {};
+if (hasDom && typeof dialogProto.showModal !== 'function') {
   dialogProto.showModal = function showModal(this: HTMLDialogElement) {
     this.setAttribute('open', '');
   };
@@ -16,7 +19,7 @@ if (typeof dialogProto.showModal !== 'function') {
 }
 
 beforeEach(() => {
-  window.localStorage.clear();
+  if (hasDom) window.localStorage.clear();
 });
 
 afterEach(() => {

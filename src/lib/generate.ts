@@ -1,5 +1,5 @@
-/** Story → storyboard → frames, on top of either backend (your own Gemini key, or Zibby). */
-import { createGeminiBackend, type AiBackend, type CallContext } from './backend';
+/** Story → storyboard → frames, on top of any backend (the free site's scene writer, or Zibby). */
+import type { AiBackend, CallContext } from './backend';
 import { redact, ScriptoError, type ErrorKind } from './errors';
 import { resolveDirection } from './direction';
 import { fromDataUrl, toDataUrl, type ExtractedImage } from './gemini';
@@ -18,16 +18,10 @@ import {
 import { parseStoryboardText } from './validate';
 
 interface ApiAccess extends Omit<CallContext, 'capAck'> {
-  /** Where requests go. Defaults to Gemini with `apiKey`. */
-  backend?: AiBackend | undefined;
-  apiKey?: string;
-  fetchImpl?: typeof fetch;
+  /** Where requests go. */
+  backend: AiBackend;
   /** Resend past Zibby's spending cap: applies to the first request only. */
   capAck?: boolean | undefined;
-}
-
-function backendFor(access: ApiAccess): AiBackend {
-  return access.backend ?? createGeminiBackend({ apiKey: access.apiKey ?? '', fetchImpl: access.fetchImpl });
 }
 
 export function validateStoryInput(story: string): void {
@@ -51,7 +45,7 @@ export async function generateStoryboard(
 ): Promise<{ storyboard: Storyboard; warnings: string[] }> {
   validateStoryInput(params.story);
   const style = getStyle(params.styleId);
-  const backend = backendFor(params);
+  const { backend } = params;
   const { text: answer } = await backend.writeStoryboard({
     story: params.story,
     sceneCount: params.sceneCount,
@@ -105,7 +99,7 @@ export async function generateFrame(
     style: getStyle(storyboard.styleId),
     hasReference: Boolean(params.reference),
   });
-  const { image, text } = await backendFor(params).drawFrame({
+  const { image, text } = await params.backend.drawFrame({
     prompt,
     reference: params.reference,
     settings: params.settings,
@@ -118,7 +112,7 @@ export async function generateFrame(
     throw new ScriptoError(
       'no-image',
       'The image model did not return a picture for this scene. It may have been held back by safety filters; try editing the scene and regenerating.',
-      { detail: said ? redact(said, params.apiKey ? [params.apiKey] : []) : undefined },
+      { detail: said ? redact(said) : undefined },
     );
   }
   return {

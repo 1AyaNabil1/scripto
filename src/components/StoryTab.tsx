@@ -6,11 +6,9 @@ import { Gallery } from './Gallery';
 import { Icon } from './Icon';
 
 export interface FirstTry {
-  /** "FREE" on Zibby and when the own-key site can send people there. */
-  free: boolean;
   title: [string, string];
   line: string;
-  /** A link out (to Scripto on Zibby), or null to open Settings instead. */
+  /** A link out (to Scripto on Zibby), or null for none. */
   href: string | null;
   cta: string;
 }
@@ -22,17 +20,17 @@ interface Props {
   onStyleChange: (id: string) => void;
   sceneCount: SceneCountChoice;
   onSceneCountChange: (count: SceneCountChoice) => void;
-  drawFrames: boolean;
+  /** Null where frames are not drawn (the free site): the switch is left out. */
+  drawFrames: boolean | null;
   onToggleFrames: () => void;
   busy: boolean;
-  /** A key is saved, or this is Zibby. */
-  canRun: boolean;
-  /** "~60 cr", "your key", "add key". */
+  /** "~60 cr" on Zibby. */
   makeChip: string | null;
+  /** A line under the button about where the story goes. */
+  makeNote: string | null;
   firstTry: FirstTry;
   onGenerate: () => void;
   onCancel: () => void;
-  onOpenSettings: () => void;
   onPickDemo: (id: string) => void;
 }
 
@@ -85,10 +83,6 @@ export function StoryTab(props: Props) {
 
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!props.canRun) {
-      props.onOpenSettings();
-      return;
-    }
     props.onGenerate();
   };
 
@@ -152,25 +146,19 @@ export function StoryTab(props: Props) {
         </div>
 
         <div className="panel controls">
-          <div className={`first-try${props.firstTry.free ? ' is-free' : ''}`}>
+          <div className="first-try is-free">
             <span className="label-mono violet">
-              {props.firstTry.free ? 'First try' : 'Your key'}
-              {props.firstTry.free && <span className="badge">Free</span>}
+              First try
+              <span className="badge">Free</span>
             </span>
             <span className="two-tone small">
               {props.firstTry.title[0]} <span className="bright">{props.firstTry.title[1]}</span>
             </span>
             <span className="first-try-line">{props.firstTry.line}</span>
-            {props.firstTry.href ? (
+            {props.firstTry.href && (
               <a className="text-link" href={props.firstTry.href} target="_blank" rel="noreferrer noopener">
                 {props.firstTry.cta} <Icon name="external" size={12} />
               </a>
-            ) : (
-              !props.canRun && (
-                <button type="button" className="text-link" onClick={props.onOpenSettings}>
-                  {props.firstTry.cta}
-                </button>
-              )
             )}
           </div>
 
@@ -221,17 +209,19 @@ export function StoryTab(props: Props) {
             </div>
           </div>
 
-          <button
-            type="button"
-            role="switch"
-            aria-checked={props.drawFrames}
-            className="switch-row"
-            onClick={props.onToggleFrames}
-            disabled={props.busy}
-          >
-            <span>Draw frames</span>
-            <span className="switch" aria-hidden="true" />
-          </button>
+          {props.drawFrames !== null && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={props.drawFrames}
+              className="switch-row"
+              onClick={props.onToggleFrames}
+              disabled={props.busy}
+            >
+              <span>Draw frames</span>
+              <span className="switch" aria-hidden="true" />
+            </button>
+          )}
 
           <div className="make">
             {props.busy ? (
@@ -239,11 +229,12 @@ export function StoryTab(props: Props) {
                 <Icon name="stop" /> Cancel
               </button>
             ) : (
-              <button type="submit" className="button primary wide" disabled={props.canRun && length < MIN_STORY_CHARS}>
+              <button type="submit" className="button primary wide" disabled={length < MIN_STORY_CHARS}>
                 <Icon name="sparkle" /> Make storyboard
                 {props.makeChip && <span className="chip-mono">{props.makeChip}</span>}
               </button>
             )}
+            {props.makeNote && <p className="make-note">{props.makeNote}</p>}
           </div>
         </div>
       </form>

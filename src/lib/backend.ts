@@ -1,7 +1,8 @@
 /**
- * The two ways Scripto reaches the models, behind one interface:
- * straight to Gemini with the visitor's own key, or through Zibby's proxy
- * (see zibby.ts), paid in the visitor's Zibby credits.
+ * The ways Scripto reaches the models, behind one interface: Scripto's own
+ * scene writer on the free site (siteApi.ts), Zibby's proxy paid in the
+ * visitor's credits (zibby.ts), and Gemini itself, which only the scene
+ * writer's server calls with the key it holds.
  */
 import { createInteraction, extractImage, extractText, type ExtractedImage } from './gemini';
 import { buildImageRequest, buildStoryboardRequest } from './prompts';
@@ -47,13 +48,18 @@ export interface AiBackend {
   drawFrame(call: FrameCall): Promise<{ image: ExtractedImage | undefined; text: string }>;
 }
 
-/** Calls the Gemini Interactions API directly, with the key from Settings. */
-export function createGeminiBackend(options: { apiKey: string; fetchImpl?: typeof fetch | undefined }): AiBackend {
+/** Calls the Gemini Interactions API with a key. Server-side only: keys never reach the browser. */
+export function createGeminiBackend(options: {
+  apiKey: string;
+  fetchImpl?: typeof fetch | undefined;
+  timeoutMs?: number | undefined;
+}): AiBackend {
   const access = (purpose: 'text' | 'image', signal: AbortSignal | undefined) => ({
     apiKey: options.apiKey,
     purpose,
     signal,
     ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
+    ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}),
   });
   return {
     kind: 'gemini',

@@ -18,6 +18,9 @@ export type ErrorKind =
   | 'validation'
   | 'no-image'
   | 'input'
+  // The free site only: one visitor's limit, and the countries Google's free tier excludes.
+  | 'rate'
+  | 'region'
   // Zibby only: the visitor's credits, spending cap, sign-in and account state.
   | 'credits'
   | 'cap'
@@ -179,6 +182,8 @@ const TITLES: Record<ErrorKind, string> = {
   validation: 'Storyboard incomplete',
   'no-image': 'No image returned',
   input: 'Check your story',
+  rate: 'One moment',
+  region: 'Not available where you are',
   credits: 'Not enough credits',
   cap: 'Keep going?',
   'signed-out': 'Sign in to Zibby',

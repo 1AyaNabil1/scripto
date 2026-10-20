@@ -1,14 +1,11 @@
 import {
   DEFAULT_SETTINGS,
   defaultSettings,
-  forgetApiKey,
+  forgetLegacyKey,
   isValidModelId,
-  loadApiKey,
+  LEGACY_KEY_ENTRY,
   loadSettings,
-  looksLikeApiKey,
-  maskApiKey,
   sanitizeSettings,
-  saveApiKey,
   saveSettings,
   STORAGE_KEYS,
 } from './settings';
@@ -31,8 +28,7 @@ describe('settings storage', () => {
     expect(loadSettings()).toEqual(custom);
   });
 
-  it('never writes the API key into the settings entry', () => {
-    saveApiKey(KEY);
+  it('never writes a key into the settings entry', () => {
     saveSettings({ ...DEFAULT_SETTINGS, apiKey: KEY } as never);
     expect(window.localStorage.getItem(STORAGE_KEYS.settings)).not.toContain(KEY);
   });
@@ -61,9 +57,8 @@ describe('settings storage', () => {
   it('copes with storage being unavailable', () => {
     expect(loadSettings(null)).toEqual(DEFAULT_SETTINGS);
     expect(saveSettings(DEFAULT_SETTINGS, null)).toBe(false);
-    expect(loadApiKey(null)).toBe('');
     expect(() => {
-      forgetApiKey(null);
+      forgetLegacyKey(null);
     }).not.toThrow();
   });
 
@@ -79,46 +74,23 @@ describe('settings storage', () => {
         throw new Error('denied');
       },
     } as unknown as Storage;
-    expect(saveApiKey(KEY, broken)).toBe(false);
-    expect(loadApiKey(broken)).toBe('');
+    expect(saveSettings(DEFAULT_SETTINGS, broken)).toBe(false);
     expect(loadSettings(broken)).toEqual(DEFAULT_SETTINGS);
     expect(() => {
-      forgetApiKey(broken);
+      forgetLegacyKey(broken);
     }).not.toThrow();
   });
 });
 
-describe('API key storage', () => {
-  it('stores the trimmed key under its own entry', () => {
-    expect(saveApiKey(`  ${KEY}\n`)).toBe(true);
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBe(KEY);
-    expect(loadApiKey()).toBe(KEY);
-  });
-
-  it('forgets only the key and keeps other settings', () => {
-    saveApiKey(KEY);
+describe('a key left by the old own-key version', () => {
+  it('is removed, and settings and storyboards stay', () => {
+    window.localStorage.setItem(LEGACY_KEY_ENTRY, KEY);
     saveSettings({ ...DEFAULT_SETTINGS, textModel: 'gemini-3.1-flash-lite' });
-    forgetApiKey();
-    expect(loadApiKey()).toBe('');
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBeNull();
+    window.localStorage.setItem(STORAGE_KEYS.storyboard, '{}');
+    forgetLegacyKey();
+    expect(window.localStorage.getItem(LEGACY_KEY_ENTRY)).toBeNull();
     expect(loadSettings().textModel).toBe('gemini-3.1-flash-lite');
-  });
-
-  it('removes the entry when an empty key is saved', () => {
-    saveApiKey(KEY);
-    saveApiKey('   ');
-    expect(window.localStorage.getItem(STORAGE_KEYS.apiKey)).toBeNull();
-  });
-
-  it('checks the rough shape of a key without validating it remotely', () => {
-    expect(looksLikeApiKey(KEY)).toBe(true);
-    expect(looksLikeApiKey('short')).toBe(false);
-    expect(looksLikeApiKey('has spaces in the middle of it ok')).toBe(false);
-  });
-
-  it('masks all but the last four characters', () => {
-    expect(maskApiKey(KEY)).toBe('••••••••1234');
-    expect(maskApiKey('')).toBe('');
+    expect(window.localStorage.getItem(STORAGE_KEYS.storyboard)).toBe('{}');
   });
 });
 

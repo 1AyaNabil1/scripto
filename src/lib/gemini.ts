@@ -2,14 +2,16 @@
  * Minimal client for the Gemini Interactions API
  * (POST https://generativelanguage.googleapis.com/v1beta/interactions).
  *
- * The key is sent in the x-goog-api-key header, never in the URL, and is never
- * logged. Every request sets store: false so Google does not keep the
- * interaction for later retrieval.
+ * Used by Scripto's scene writer (src/server/), which holds the key; the
+ * browser never calls Google itself. The key is sent in the x-goog-api-key
+ * header, never in the URL, and is never logged. Every request sets
+ * store: false so Google does not keep the interaction for later retrieval.
  */
-import { GOOGLE_API_ORIGIN } from './csp';
 import { errorFromHttp, redact, ScriptoError, type RequestPurpose } from './errors';
 import type { InteractionRequest } from './prompts';
 import { isValidModelId } from './settings';
+
+export const GOOGLE_API_ORIGIN = 'https://generativelanguage.googleapis.com';
 
 export const INTERACTIONS_ENDPOINT = `${GOOGLE_API_ORIGIN}/v1beta/interactions`;
 

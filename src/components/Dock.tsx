@@ -8,6 +8,7 @@ interface Props {
   onLayoutChange: (layout: Layout) => void;
   missing: number;
   total: number;
+  drawsFrames: boolean;
   canGenerate: boolean;
   generateHint: string;
   /** "~54 cr" on Zibby; nothing elsewhere. */
@@ -75,17 +76,21 @@ export function Dock(props: Props) {
             <Icon name="film" size={18} />
           </button>
         </div>
-        <span className="dock-sep" aria-hidden="true" />
-        <button
-          type="button"
-          className="dock-button primary"
-          onClick={props.onDraw}
-          disabled={!props.canGenerate || props.missing === 0 || props.busy}
-          title={props.canGenerate ? undefined : props.generateHint}
-        >
-          <Icon name="image" /> {drawLabel}
-          {props.quote && props.missing > 0 && <span className="chip-mono">{props.quote}</span>}
-        </button>
+        {props.drawsFrames && (
+          <>
+            <span className="dock-sep" aria-hidden="true" />
+            <button
+              type="button"
+              className="dock-button primary"
+              onClick={props.onDraw}
+              disabled={!props.canGenerate || props.missing === 0 || props.busy}
+              title={props.canGenerate ? undefined : props.generateHint}
+            >
+              <Icon name="image" /> {drawLabel}
+              {props.quote && props.missing > 0 && <span className="chip-mono">{props.quote}</span>}
+            </button>
+          </>
+        )}
         <span className="dock-sep" aria-hidden="true" />
         <button
           type="button"

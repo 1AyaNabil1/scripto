@@ -1,0 +1,7 @@
+{
+  "name": "scripto-api",
+  "private": true,
+  "description": "Scripto's free scene writer. Deploy this folder to Vercel; the code is built from ../src/server.",
+  "license": "MIT",
+  "type": "module"
+}

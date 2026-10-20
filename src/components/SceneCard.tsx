@@ -12,6 +12,7 @@ interface Props {
   rtl: boolean;
   lang: string | undefined;
   status: FrameStatus | undefined;
+  drawsFrames: boolean;
   canGenerate: boolean;
   generateHint: string;
   onGenerate: (sceneId: string) => void;
@@ -48,18 +49,20 @@ export function SceneCard(props: Props) {
       >
         <Icon name="edit" size={12} />
       </button>
-      <button
-        type="button"
-        className="frame-button"
-        onClick={() => {
-          props.onGenerate(scene.id);
-        }}
-        disabled={!props.canGenerate || loading}
-        aria-label={`${scene.image ? 'Regenerate' : 'Generate'} frame for scene ${index + 1}`}
-        title={props.canGenerate ? (scene.image ? 'Redraw' : 'Draw') : props.generateHint}
-      >
-        <Icon name={scene.image ? 'refresh' : 'image'} size={12} />
-      </button>
+      {props.drawsFrames && (
+        <button
+          type="button"
+          className="frame-button"
+          onClick={() => {
+            props.onGenerate(scene.id);
+          }}
+          disabled={!props.canGenerate || loading}
+          aria-label={`${scene.image ? 'Regenerate' : 'Generate'} frame for scene ${index + 1}`}
+          title={props.canGenerate ? (scene.image ? 'Redraw' : 'Draw') : props.generateHint}
+        >
+          <Icon name={scene.image ? 'refresh' : 'image'} size={12} />
+        </button>
+      )}
     </>
   );
 

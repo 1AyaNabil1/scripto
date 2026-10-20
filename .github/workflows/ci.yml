@@ -43,3 +43,8 @@ jobs:
 
       - name: Build for Zibby
         run: npm run build:zibby
+
+      - name: Check the scene writer bundle is up to date
+        run: |
+          npm run build:proxy
+          git diff --exit-code -- proxy/api
