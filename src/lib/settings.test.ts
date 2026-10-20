@@ -1,5 +1,6 @@
 import {
   DEFAULT_SETTINGS,
+  defaultSettings,
   forgetApiKey,
   isValidModelId,
   loadApiKey,
@@ -138,5 +139,21 @@ describe('isValidModelId', () => {
 describe('defaults', () => {
   it('starts with images off, since Gemini image models need a paid-tier key', () => {
     expect(DEFAULT_SETTINGS.generateImages).toBe(false);
+  });
+});
+
+describe('Zibby settings', () => {
+  it('start with frames on and the platform models', () => {
+    expect(defaultSettings('zibby')).toMatchObject({
+      generateImages: true,
+      textModel: 'claude-sonnet-5',
+      imageModel: 'google/gemini-3.1-flash-image',
+    });
+  });
+
+  it('only keep models from the Zibby catalogue', () => {
+    const clean = sanitizeSettings({ textModel: 'gemini-3.8-flash', imageModel: 'google/gemini-2.5-flash-image' }, 'zibby');
+    expect(clean.textModel).toBe('claude-sonnet-5');
+    expect(clean.imageModel).toBe('google/gemini-2.5-flash-image');
   });
 });

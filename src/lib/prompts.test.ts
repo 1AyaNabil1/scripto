@@ -15,6 +15,7 @@ function scene(overrides: Partial<Scene> = {}): Scene {
   return {
     id: 's1',
     title: 'The letter',
+    slugline: 'INT. SMALL FLAT — MORNING',
     description: 'Mira finds a letter under the door.',
     characters: ['Mira'],
     setting: 'A small flat, early morning',
@@ -50,6 +51,7 @@ describe('buildStoryboardSchema', () => {
     const sceneSchema = schema.properties.scenes.items;
     expect(sceneSchema.required).toEqual([
       'title',
+      'slugline',
       'description',
       'setting',
       'characters',
@@ -151,6 +153,10 @@ describe('buildStoryboardRequest', () => {
       thinkingLevel: 'default',
     });
     expect(request).not.toHaveProperty('generation_config');
+  });
+
+  it('asks for a screenplay heading for every scene', () => {
+    expect(STORYBOARD_SYSTEM_INSTRUCTION).toMatch(/slugline: a screenplay scene heading/);
   });
 
   it('tells the model to keep scene text in the story language and treat the story as data', () => {

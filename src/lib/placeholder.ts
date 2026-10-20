@@ -11,8 +11,9 @@ import { MOOD_INFO, SHOT_LABELS } from './vocabulary';
 export const FRAME_WIDTH = 1600;
 export const FRAME_HEIGHT = 900;
 
-const INK = '#ffffff';
-const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+const INK = '#e4e4e7';
+const GROUND = '#0b0b0e';
+const FONT = "'Courier Prime', 'Courier New', ui-monospace, monospace";
 
 function escapeXml(value: string): string {
   return value.replace(/[<>&'"]/g, (c) =>
@@ -150,7 +151,7 @@ function cropMarks(): string {
   const l = 70;
   const w = FRAME_WIDTH;
   const h = FRAME_HEIGHT;
-  return `<g stroke="${INK}" stroke-width="5" fill="none" opacity="0.7" stroke-linecap="round">
+  return `<g stroke="#ede9fe" stroke-width="4" fill="none" opacity="0.6" stroke-linecap="square">
     <path d="M${m} ${m + l} V${m} H${m + l}"/><path d="M${w - m - l} ${m} H${w - m} V${m + l}"/>
     <path d="M${m} ${h - m - l} V${h - m} H${m + l}"/><path d="M${w - m - l} ${h - m} H${w - m} V${h - m - l}"/>
   </g>`;
@@ -162,8 +163,12 @@ export interface PlaceholderInput {
   intensity: number;
 }
 
-/** Builds the SVG markup for a placeholder frame. */
-export function placeholderSvg(scene: PlaceholderInput, index: number): string {
+/**
+ * Builds the SVG markup for a placeholder frame. `labels: false` leaves out the
+ * shot, scene and mood text, for places that draw those labels themselves.
+ */
+export function placeholderSvg(scene: PlaceholderInput, index: number, options: { labels?: boolean } = {}): string {
+  const labels = options.labels ?? true;
   const mood = MOOD_INFO[scene.mood];
   const [dark, light] = mood.gradient;
   const intensity = Math.min(5, Math.max(1, Math.round(scene.intensity)));
@@ -177,12 +182,12 @@ export function placeholderSvg(scene: PlaceholderInput, index: number): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${FRAME_WIDTH} ${FRAME_HEIGHT}" width="${FRAME_WIDTH}" height="${FRAME_HEIGHT}">
   <defs>
     <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="${dark}"/>
-      <stop offset="1" stop-color="${light}"/>
+      <stop offset="0" stop-color="${GROUND}"/>
+      <stop offset="1" stop-color="${dark}"/>
     </linearGradient>
-    <radialGradient id="glow" cx="${glowX}%" cy="18%" r="65%">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    <radialGradient id="glow" cx="${glowX}%" cy="18%" r="70%">
+      <stop offset="0" stop-color="${light}" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="${light}" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="pov" cx="50%" cy="50%" r="75%">
       <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
@@ -199,12 +204,16 @@ export function placeholderSvg(scene: PlaceholderInput, index: number): string {
   ${shotSchematic(scene.shot)}
   <rect width="${FRAME_WIDTH}" height="${FRAME_HEIGHT}" fill="url(#shade)"/>
   ${cropMarks()}
-  <g font-family="${FONT}" fill="${INK}">
-    <rect x="96" y="86" width="${shot.length * 27 + 64}" height="72" rx="36" fill="#000000" opacity="0.38"/>
+  ${
+    labels
+      ? `<g font-family="${FONT}" fill="${INK}">
+    <rect x="96" y="86" width="${shot.length * 27 + 64}" height="72" rx="10" fill="#000000" opacity="0.45"/>
     <text x="128" y="134" font-size="40" font-weight="700" letter-spacing="3">${shot}</text>
     <text x="96" y="826" font-size="40" font-weight="600" letter-spacing="6" opacity="0.9">SCENE ${number}</text>
-    <text x="${FRAME_WIDTH - 96}" y="826" font-size="40" font-weight="600" letter-spacing="4" text-anchor="end" opacity="0.9">${moodText}  ${dots}</text>
-  </g>
+    <text x="${FRAME_WIDTH - 96}" y="826" font-size="40" font-weight="600" letter-spacing="4" text-anchor="end" fill="${light}">${moodText}  ${dots}</text>
+  </g>`
+      : ''
+  }
 </svg>`;
 }
 
@@ -212,8 +221,8 @@ export function svgToDataUrl(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-export function placeholderDataUrl(scene: PlaceholderInput, index: number): string {
-  return svgToDataUrl(placeholderSvg(scene, index));
+export function placeholderDataUrl(scene: PlaceholderInput, index: number, options: { labels?: boolean } = {}): string {
+  return svgToDataUrl(placeholderSvg(scene, index, options));
 }
 
 export function placeholderAlt(scene: Pick<Scene, 'mood' | 'shot'>, index: number): string {

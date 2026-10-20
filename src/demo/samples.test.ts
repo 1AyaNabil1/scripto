@@ -6,8 +6,8 @@ import { normalizeStoryboardData } from '../lib/validate';
 import { DEMO_ENTRIES, loadDemo } from './samples';
 
 describe('demo storyboards', () => {
-  it('ships two demos that need no API key', () => {
-    expect(DEMO_ENTRIES).toHaveLength(2);
+  it('ships three demos that need no API key', () => {
+    expect(DEMO_ENTRIES.map((e) => e.id)).toEqual(['clockmaker', 'bottle', 'lighthouse']);
     for (const entry of DEMO_ENTRIES) {
       const storyboard = loadDemo(entry.id)!;
       expect(storyboard.source).toBe('demo');
@@ -33,6 +33,7 @@ describe('demo storyboards', () => {
       expect(scene.description).not.toBe('');
       expect(scene.line).not.toBe('');
       expect(scene.visualPrompt).not.toBe('');
+      expect(scene.slugline).toMatch(/^(INT|EXT|داخلي|خارجي)\./);
       for (const name of scene.characters) expect(castNames).toContain(name);
       if (scene.lineType === 'dialogue') expect(castNames).toContain(scene.speaker);
       else expect(scene.speaker).toBe('');
@@ -68,6 +69,19 @@ describe('demo storyboards', () => {
     expect(b.scenes[0]!.title).toBe('The lantern market');
     expect(b.scenes[0]!.characters).toEqual(['Ilyas']);
     expect(a.scenes[0]!.id).not.toBe(b.scenes[0]!.id);
+  });
+
+  it('describes each demo for the gallery', () => {
+    for (const entry of DEMO_ENTRIES) {
+      const storyboard = loadDemo(entry.id)!;
+      expect(entry.sceneCount).toBe(storyboard.scenes.length);
+      expect(entry.styleId).toBe(storyboard.styleId);
+      expect(entry.cover).toEqual({
+        mood: storyboard.scenes[0]!.mood,
+        shot: storyboard.scenes[0]!.shot,
+        intensity: storyboard.scenes[0]!.intensity,
+      });
+    }
   });
 
   it('returns undefined for unknown demos', () => {

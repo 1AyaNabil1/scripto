@@ -48,6 +48,8 @@ export interface SceneImage {
 export interface Scene {
   id: string;
   title: string;
+  /** Screenplay scene heading, e.g. "EXT. NIGHT MARKET — NIGHT", in the story's language. */
+  slugline: string;
   description: string;
   characters: string[];
   setting: string;
@@ -75,7 +77,8 @@ export interface Storyboard {
   styleId: string;
   characters: Character[];
   scenes: Scene[];
-  source: 'demo' | 'gemini' | 'import';
+  /** Where the scenes came from: a bundled demo, a model (with your own Gemini key, or on Zibby) or a file. */
+  source: 'demo' | 'gemini' | 'zibby' | 'import';
   createdAt: string;
   /** The story the storyboard was made from, when known. */
   story?: string;

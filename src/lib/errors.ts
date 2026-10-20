@@ -17,20 +17,32 @@ export type ErrorKind =
   | 'parse'
   | 'validation'
   | 'no-image'
-  | 'input';
+  | 'input'
+  // Zibby only: the visitor's credits, spending cap, sign-in and account state.
+  | 'credits'
+  | 'cap'
+  | 'signed-out'
+  | 'locked';
 
 export class ScriptoError extends Error {
   readonly kind: ErrorKind;
   readonly status: number | undefined;
   /** Extra detail from the API (already redacted), shown under the message. */
   readonly detail: string | undefined;
+  /** Zibby's request id, the key a charge is filed under; shown for support questions. */
+  readonly requestId: string | undefined;
 
-  constructor(kind: ErrorKind, message: string, options: { status?: number; detail?: string; cause?: unknown } = {}) {
+  constructor(
+    kind: ErrorKind,
+    message: string,
+    options: { status?: number; detail?: string; requestId?: string | null; cause?: unknown } = {},
+  ) {
     super(message, options.cause === undefined ? undefined : { cause: options.cause });
     this.name = 'ScriptoError';
     this.kind = kind;
     this.status = options.status;
     this.detail = options.detail;
+    this.requestId = options.requestId ?? undefined;
   }
 
   /** Worth retrying automatically (temporary server trouble). */
@@ -144,6 +156,9 @@ export interface FriendlyError {
   title: string;
   message: string;
   detail?: string | undefined;
+  /** Set for errors the UI offers a way out of (top up, sign in, continue). */
+  kind?: ErrorKind | undefined;
+  requestId?: string | undefined;
 }
 
 const TITLES: Record<ErrorKind, string> = {
@@ -164,12 +179,22 @@ const TITLES: Record<ErrorKind, string> = {
   validation: 'Storyboard incomplete',
   'no-image': 'No image returned',
   input: 'Check your story',
+  credits: 'Not enough credits',
+  cap: 'Keep going?',
+  'signed-out': 'Sign in to Zibby',
+  locked: 'Account on hold',
 };
 
 /** Converts any thrown value into something safe to show on screen. */
 export function toFriendlyError(error: unknown): FriendlyError {
   if (isScriptoError(error)) {
-    return { title: TITLES[error.kind], message: error.message, detail: error.detail };
+    return {
+      title: TITLES[error.kind],
+      message: error.message,
+      detail: error.detail,
+      kind: error.kind,
+      requestId: error.requestId,
+    };
   }
   return {
     title: 'Something went wrong',

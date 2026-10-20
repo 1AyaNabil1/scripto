@@ -11,6 +11,7 @@ export function sceneRange(choice: SceneCountChoice): { min: number; max: number
 
 const SCENE_FIELDS = [
   'title',
+  'slugline',
   'description',
   'setting',
   'characters',
@@ -72,6 +73,11 @@ export function buildStoryboardSchema(choice: SceneCountChoice) {
           type: 'object',
           properties: {
             title: { type: 'string', description: 'Scene title of a few words, in the language of the story.' },
+            slugline: {
+              type: 'string',
+              description:
+                'Screenplay scene heading in the language of the story: interior or exterior, place, time of day. For example "EXT. NIGHT MARKET — NIGHT" or "خارجي. الشاطئ — صباح".',
+            },
             description: {
               type: 'string',
               description: 'One or two sentences on what happens in this moment, in the language of the story.',
@@ -120,3 +126,25 @@ export function buildStoryboardSchema(choice: SceneCountChoice) {
 }
 
 export type StoryboardSchema = ReturnType<typeof buildStoryboardSchema>;
+
+/** Keywords Claude's structured output accepts. Numeric and array-length limits are not among them. */
+const CLAUDE_SCHEMA_KEYWORDS = new Set(['type', 'properties', 'required', 'additionalProperties', 'enum', 'items', 'description']);
+
+/**
+ * The same schema for Claude's `output_config.format`: everything it does not
+ * support (minimum/maximum, minItems/maxItems) is dropped. Those limits are
+ * still enforced after the answer arrives, by `normalizeStoryboardData`.
+ */
+export function toClaudeSchema(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(toClaudeSchema);
+  if (!node || typeof node !== 'object') return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'properties' && value && typeof value === 'object') {
+      out[key] = Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([name, child]) => [name, toClaudeSchema(child)]));
+    } else if (CLAUDE_SCHEMA_KEYWORDS.has(key)) {
+      out[key] = toClaudeSchema(value);
+    }
+  }
+  return out;
+}

@@ -12,6 +12,7 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "skipLibCheck": true,
+    "paths": { "@host": ["./src/host/byok.ts"] },
 
     "strict": true,
     "noUnusedLocals": true,

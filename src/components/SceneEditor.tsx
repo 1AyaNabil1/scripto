@@ -7,6 +7,8 @@ interface Props {
   scene: Scene;
   onSave: (changes: Partial<EditableSceneFields>) => void;
   onCancel: () => void;
+  /** Offered when the scene has a generated frame: go back to the sketch. */
+  onRemoveImage?: (() => void) | undefined;
 }
 
 function splitNames(value: string): string[] {
@@ -22,9 +24,10 @@ function splitNames(value: string): string[] {
     });
 }
 
-export function SceneEditor({ scene, onSave, onCancel }: Props) {
+export function SceneEditor({ scene, onSave, onCancel, onRemoveImage }: Props) {
   const id = useId();
   const [title, setTitle] = useState(scene.title);
+  const [slugline, setSlugline] = useState(scene.slugline);
   const [description, setDescription] = useState(scene.description);
   const [characters, setCharacters] = useState(scene.characters.join(', '));
   const [setting, setSetting] = useState(scene.setting);
@@ -42,6 +45,7 @@ export function SceneEditor({ scene, onSave, onCancel }: Props) {
     const type: LineType = lineType === 'dialogue' && trimmedSpeaker ? 'dialogue' : 'narration';
     onSave({
       title: title.trim() || scene.title,
+      slugline: slugline.trim(),
       description: description.trim(),
       characters: splitNames(characters),
       setting: setting.trim(),
@@ -60,6 +64,10 @@ export function SceneEditor({ scene, onSave, onCancel }: Props) {
       <div className="field">
         <label htmlFor={`${id}-title`}>Title</label>
         <input id={`${id}-title`} dir="auto" value={title} maxLength={120} onChange={(e) => { setTitle(e.target.value); }} required />
+      </div>
+      <div className="field">
+        <label htmlFor={`${id}-slug`}>Scene heading</label>
+        <input id={`${id}-slug`} dir="auto" value={slugline} maxLength={120} placeholder="EXT. PLACE — TIME" onChange={(e) => { setSlugline(e.target.value); }} />
       </div>
       <div className="field">
         <label htmlFor={`${id}-desc`}>Description</label>
@@ -150,6 +158,12 @@ export function SceneEditor({ scene, onSave, onCancel }: Props) {
         </p>
       </div>
       <div className="editor-actions">
+        {onRemoveImage && (
+          <button type="button" className="button ghost danger-text" onClick={onRemoveImage}>
+            Use the sketch
+          </button>
+        )}
+        <span className="spacer" />
         <button type="button" className="button ghost" onClick={onCancel}>
           Cancel
         </button>

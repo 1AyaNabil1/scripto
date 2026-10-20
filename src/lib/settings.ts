@@ -4,7 +4,17 @@
  * The API key lives under its own storage key so that "Forget key" removes
  * exactly that and nothing else. Nothing here is ever sent anywhere except
  * the key itself, which goes only to Google's Generative Language API.
+ *
+ * On Zibby there is no key, and the model choices are the platform's
+ * catalogue ids instead of Gemini model names.
  */
+import type { Host } from './host';
+import {
+  ZIBBY_DEFAULT_IMAGE_MODEL,
+  ZIBBY_DEFAULT_TEXT_MODEL,
+  ZIBBY_IMAGE_MODELS,
+  ZIBBY_TEXT_MODELS,
+} from './zibbyPayloads';
 
 export const THINKING_LEVELS = ['default', 'minimal', 'low', 'medium', 'high'] as const;
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
@@ -53,6 +63,20 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   useStyleReference: true,
 });
 
+/** On Zibby frames are paid in credits, so they start on. */
+export const ZIBBY_DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
+  textModel: ZIBBY_DEFAULT_TEXT_MODEL,
+  imageModel: ZIBBY_DEFAULT_IMAGE_MODEL,
+  thinkingLevel: 'low',
+  generateImages: true,
+  imageSize: '1K',
+  useStyleReference: true,
+});
+
+export function defaultSettings(host: Host = 'byok'): Settings {
+  return { ...(host === 'zibby' ? ZIBBY_DEFAULT_SETTINGS : DEFAULT_SETTINGS) };
+}
+
 export const STORAGE_KEYS = {
   apiKey: 'scripto.apiKey',
   settings: 'scripto.settings',
@@ -76,36 +100,42 @@ export function safeStorage(): Storage | null {
   }
 }
 
-export function sanitizeSettings(raw: unknown): Settings {
+export function sanitizeSettings(raw: unknown, host: Host = 'byok'): Settings {
   const input = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const defaults = host === 'zibby' ? ZIBBY_DEFAULT_SETTINGS : DEFAULT_SETTINGS;
   const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
     typeof value === 'string' && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+  const model = (value: unknown, catalogue: readonly { id: string }[], fallback: string): string =>
+    host === 'zibby'
+      ? pick(value, catalogue.map((option) => option.id), fallback)
+      : isValidModelId(value)
+        ? value.trim()
+        : fallback;
   return {
-    textModel: isValidModelId(input.textModel) ? input.textModel.trim() : DEFAULT_SETTINGS.textModel,
-    imageModel: isValidModelId(input.imageModel) ? input.imageModel.trim() : DEFAULT_SETTINGS.imageModel,
-    thinkingLevel: pick(input.thinkingLevel, THINKING_LEVELS, DEFAULT_SETTINGS.thinkingLevel),
-    generateImages:
-      typeof input.generateImages === 'boolean' ? input.generateImages : DEFAULT_SETTINGS.generateImages,
-    imageSize: pick(input.imageSize, IMAGE_SIZES, DEFAULT_SETTINGS.imageSize),
+    textModel: model(input.textModel, ZIBBY_TEXT_MODELS, defaults.textModel),
+    imageModel: model(input.imageModel, ZIBBY_IMAGE_MODELS, defaults.imageModel),
+    thinkingLevel: pick(input.thinkingLevel, THINKING_LEVELS, defaults.thinkingLevel),
+    generateImages: typeof input.generateImages === 'boolean' ? input.generateImages : defaults.generateImages,
+    imageSize: pick(input.imageSize, IMAGE_SIZES, defaults.imageSize),
     useStyleReference:
-      typeof input.useStyleReference === 'boolean' ? input.useStyleReference : DEFAULT_SETTINGS.useStyleReference,
+      typeof input.useStyleReference === 'boolean' ? input.useStyleReference : defaults.useStyleReference,
   };
 }
 
-export function loadSettings(storage: Storage | null = safeStorage()): Settings {
-  if (!storage) return { ...DEFAULT_SETTINGS };
+export function loadSettings(storage: Storage | null = safeStorage(), host: Host = 'byok'): Settings {
+  if (!storage) return defaultSettings(host);
   try {
     const raw = storage.getItem(STORAGE_KEYS.settings);
-    return sanitizeSettings(raw ? JSON.parse(raw) : {});
+    return sanitizeSettings(raw ? JSON.parse(raw) : {}, host);
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return defaultSettings(host);
   }
 }
 
-export function saveSettings(settings: Settings, storage: Storage | null = safeStorage()): boolean {
+export function saveSettings(settings: Settings, storage: Storage | null = safeStorage(), host: Host = 'byok'): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(STORAGE_KEYS.settings, JSON.stringify(sanitizeSettings(settings)));
+    storage.setItem(STORAGE_KEYS.settings, JSON.stringify(sanitizeSettings(settings, host)));
     return true;
   } catch {
     return false;

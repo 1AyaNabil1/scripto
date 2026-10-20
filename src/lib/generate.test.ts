@@ -9,6 +9,7 @@ import {
   TEST_KEY,
   textInteraction,
 } from '../test/fetchMocks';
+import type { AiBackend } from './backend';
 import { ScriptoError } from './errors';
 import { generateFrame, generateFrames, generateStoryboard, validateStoryInput } from './generate';
 import { DEFAULT_SETTINGS, type Settings } from './settings';
@@ -263,5 +264,72 @@ describe('generateFrames', () => {
     });
     const input = requestBody(fetchMock).input as { mime_type?: string }[];
     expect(input[1]?.mime_type).toBe('image/jpeg');
+  });
+});
+
+describe('with another backend', () => {
+  it('uses the backend it is given and keeps its kind as the source', async () => {
+    const backend: AiBackend = {
+      kind: 'zibby',
+      writeStoryboard: vi.fn(async (call) => {
+        call.onCharge?.({ known: true, credits: 7, comped: false, requestId: 'r1' });
+        return { text: JSON.stringify(storyboardJson(3)) };
+      }),
+      drawFrame: vi.fn(async () => ({ image: { data: PNG_BASE64, mimeType: 'image/png' }, text: '' })),
+    };
+    const charges: number[] = [];
+    const { storyboard } = await generateStoryboard({
+      story: STORY,
+      sceneCount: 3,
+      styleId: 'sketch',
+      settings,
+      backend,
+      onCharge: (c) => charges.push(c.credits),
+    });
+    expect(storyboard.source).toBe('zibby');
+    expect(charges).toEqual([7]);
+    expect(storyboard.scenes[0]!.slugline).toBe('A RAINY STREET');
+  });
+
+  it('acknowledges the spending cap on the first frame only', async () => {
+    const storyboard = await makeStoryboard(3);
+    const acks: (boolean | undefined)[] = [];
+    const backend: AiBackend = {
+      kind: 'zibby',
+      writeStoryboard: vi.fn(),
+      drawFrame: vi.fn(async (call) => {
+        acks.push(call.capAck);
+        return { image: { data: PNG_BASE64, mimeType: 'image/png' }, text: '' };
+      }),
+    };
+    await generateFrames({
+      storyboard,
+      sceneIds: storyboard.scenes.map((s) => s.id),
+      settings: { ...settings, useStyleReference: false },
+      backend,
+      capAck: true,
+      concurrency: 1,
+    });
+    expect(acks).toEqual([true, false, false]);
+  });
+
+  it('stops the batch when credits run out', async () => {
+    const storyboard = await makeStoryboard(3);
+    const backend: AiBackend = {
+      kind: 'zibby',
+      writeStoryboard: vi.fn(),
+      drawFrame: vi.fn(async () => {
+        throw new ScriptoError('credits', 'Top up.');
+      }),
+    };
+    const result = await generateFrames({
+      storyboard,
+      sceneIds: storyboard.scenes.map((s) => s.id),
+      settings: { ...settings, useStyleReference: false },
+      backend,
+      concurrency: 1,
+    });
+    expect(result).toMatchObject({ done: 0, failed: 1, skipped: 2 });
+    expect(result.fatal).toMatchObject({ kind: 'credits' });
   });
 });

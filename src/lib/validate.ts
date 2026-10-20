@@ -22,6 +22,7 @@ export interface ParsedStoryboard {
 
 const LIMITS = {
   title: 120,
+  slugline: 120,
   logline: 400,
   description: 800,
   setting: 240,
@@ -68,6 +69,12 @@ function nameList(value: unknown): string[] {
     }
   }
   return names.slice(0, LIMITS.charactersPerScene);
+}
+
+/** A heading from the setting when the model or an older file gave none: its first clause, in capitals. */
+export function sluglineFromSetting(setting: string): string {
+  const first = setting.split(/[,،;.]/)[0]?.trim() ?? '';
+  return first.toLocaleUpperCase().slice(0, 60);
 }
 
 function intensity(value: unknown): number | undefined {
@@ -127,13 +134,15 @@ export function normalizeScene(value: unknown, index: number): { scene?: Scene; 
         : 'narration';
   if (lineType === 'dialogue' && !speaker) lineType = 'narration';
 
+  const setting = text(value.setting ?? value.location, LIMITS.setting);
   return {
     scene: {
       id: makeId('scene'),
       title: text(value.title, LIMITS.title) || `Scene ${index + 1}`,
+      slugline: text(value.slugline ?? value.heading ?? value.sceneHeading, LIMITS.slugline) || sluglineFromSetting(setting),
       description,
       characters: nameList(value.characters),
-      setting: text(value.setting ?? value.location, LIMITS.setting),
+      setting,
       mood: mood ?? 'calm',
       intensity: intensity(value.intensity) ?? 3,
       shot: shot ?? 'medium',

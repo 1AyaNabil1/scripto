@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type SyntheticEvent } from 'react';
+import type { Host } from '../lib/host';
 import {
-  DEFAULT_SETTINGS,
+  defaultSettings,
   IMAGE_MODEL_OPTIONS,
   IMAGE_SIZES,
   isValidModelId,
@@ -12,11 +13,13 @@ import {
   type Settings,
   type ThinkingLevel,
 } from '../lib/settings';
+import { ZIBBY_IMAGE_MODELS, ZIBBY_TEXT_MODELS } from '../lib/zibbyPayloads';
 import { Icon } from './Icon';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  host: Host;
   apiKey: string;
   settings: Settings;
   onSaveKey: (key: string) => void;
@@ -32,7 +35,40 @@ const THINKING_LABELS: Record<ThinkingLevel, string> = {
   high: 'High',
 };
 
-export function SettingsDialog({ open, onClose, apiKey, settings, onSaveKey, onForgetKey, onSaveSettings }: Props) {
+const KEY_STEPS = [
+  <>
+    Open{' '}
+    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer noopener">
+      aistudio.google.com/apikey
+    </a>{' '}
+    and sign in with Google
+  </>,
+  <>Create API key, then pick or make a project</>,
+  <>
+    Set up billing on that project for frames <span className="muted">· the free tier draws scenes only · about $0.07 a frame</span>
+  </>,
+  <>Optional: limit the key to the Gemini API and add a $5 budget alert</>,
+  <>Paste it below</>,
+];
+
+function Switch(props: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={props.checked}
+      className="switch-row"
+      onClick={() => {
+        props.onChange(!props.checked);
+      }}
+    >
+      <span>{props.label}</span>
+      <span className="switch" aria-hidden="true" />
+    </button>
+  );
+}
+
+export function SettingsDialog({ open, onClose, host, apiKey, settings, onSaveKey, onForgetKey, onSaveSettings }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const keyInputRef = useRef<HTMLInputElement>(null);
   const [keyDraft, setKeyDraft] = useState('');
@@ -54,11 +90,17 @@ export function SettingsDialog({ open, onClose, apiKey, settings, onSaveKey, onF
       setSaved(false);
       setShowKey(false);
       dialog.showModal();
-      if (!apiKey) keyInputRef.current?.focus();
+      if (host === 'byok' && !apiKey) keyInputRef.current?.focus();
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open, settings, apiKey]);
+  }, [open, settings, apiKey, host]);
+
+  const apply = (changes: Partial<Settings>) => {
+    const next = { ...settings, ...changes };
+    setDraft((current) => ({ ...current, ...changes }));
+    onSaveSettings(next);
+  };
 
   const submitKey = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -73,13 +115,7 @@ export function SettingsDialog({ open, onClose, apiKey, settings, onSaveKey, onF
     setKeyMessage('Key saved in this browser.');
   };
 
-  const forget = () => {
-    onForgetKey();
-    setKeyDraft('');
-    setKeyMessage('Key removed from this browser.');
-  };
-
-  const submitSettings = (event: SyntheticEvent<HTMLFormElement>) => {
+  const submitModels = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isValidModelId(draft.textModel) || !isValidModelId(draft.imageModel)) {
       setModelError('Model IDs look like "gemini-3.8-flash": letters, numbers, dots and dashes only.');
@@ -95,256 +131,275 @@ export function SettingsDialog({ open, onClose, apiKey, settings, onSaveKey, onF
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
+  const zibbyText = ZIBBY_TEXT_MODELS.find((m) => m.id === settings.textModel);
+
   return (
-    <dialog
-      ref={dialogRef}
-      className="dialog"
-      aria-labelledby={`${id}-title`}
-      onClose={onClose}
-      onCancel={onClose}
-    >
-      <div className="dialog-header">
+    <dialog ref={dialogRef} className="drawer" aria-labelledby={`${id}-title`} onClose={onClose} onCancel={onClose}>
+      <div className="drawer-head">
         <h2 id={`${id}-title`}>Settings</h2>
         <button type="button" className="icon-button" onClick={onClose} aria-label="Close settings">
           <Icon name="close" />
         </button>
       </div>
 
-      <section className="dialog-section" aria-labelledby={`${id}-key`}>
-        <h3 id={`${id}-key`}>
-          <Icon name="key" /> Gemini API key
-        </h3>
-        <p className="privacy-note">
-          <Icon name="lock" size={16} />
-          <span>
-            Scripto has no server. Your key is stored <strong>only in this browser</strong> (localStorage) and is sent{' '}
-            <strong>only to Google’s Gemini API</strong> at generativelanguage.googleapis.com when you generate. It is
-            never logged or sent anywhere else.
-          </span>
-        </p>
-        <p className="key-status" role="status">
-          {apiKey ? (
-            <>
-              <Icon name="check" size={16} /> A key is saved: <code>{maskApiKey(apiKey)}</code>
-            </>
-          ) : (
-            'No key saved. Demo mode works without one.'
-          )}
-        </p>
-        <form className="key-form" onSubmit={submitKey}>
-          <label htmlFor={`${id}-key-input`}>{apiKey ? 'Replace key' : 'Paste your key'}</label>
-          <div className="key-row">
-            <input
-              ref={keyInputRef}
-              id={`${id}-key-input`}
-              type={showKey ? 'text' : 'password'}
-              value={keyDraft}
-              onChange={(e) => {
-                setKeyDraft(e.target.value);
-              }}
-              autoComplete="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              placeholder="AIza…"
-              aria-describedby={`${id}-key-help`}
-            />
-            <button
-              type="button"
-              className="button ghost"
-              onClick={() => {
-                setShowKey((v) => !v);
-              }}
-              aria-pressed={showKey}
-            >
-              {showKey ? 'Hide' : 'Show'}
-            </button>
-            <button type="submit" className="button primary" disabled={!keyDraft.trim()}>
-              Save key
-            </button>
+      {host === 'byok' ? (
+        <>
+          <div className="drawer-hero">
+            <span className="label-mono violet">
+              Your API key
+            </span>
+            <span className="two-tone small">
+              Two minutes, <span className="bright">once.</span>
+            </span>
           </div>
-          <p id={`${id}-key-help`} className="help">
-            Create a key in{' '}
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer noopener">
-              Google AI Studio
-            </a>
-            . Use a key restricted to the Gemini API, set a budget alert, and forget the key when you use a shared
-            computer.
-          </p>
-          {keyMessage && (
-            <p className="help strong" role="status">
-              {keyMessage}
+          <ol className="key-steps">
+            {KEY_STEPS.map((step, i) => (
+              <li key={i}>
+                <span className="mono-num violet">{String(i + 1).padStart(2, '0')}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+          <form className="drawer-section key-form" onSubmit={submitKey}>
+            <label htmlFor={`${id}-key-input`} className="visually-hidden">
+              Your API key
+            </label>
+            <div className="key-row">
+              <input
+                ref={keyInputRef}
+                id={`${id}-key-input`}
+                type={showKey ? 'text' : 'password'}
+                value={keyDraft}
+                onChange={(e) => {
+                  setKeyDraft(e.target.value);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                autoCapitalize="off"
+                placeholder={apiKey ? maskApiKey(apiKey) : 'AIza…'}
+              />
+              <button
+                type="button"
+                className="button ghost small"
+                onClick={() => {
+                  setShowKey((v) => !v);
+                }}
+                aria-pressed={showKey}
+              >
+                {showKey ? 'Hide' : 'Show'}
+              </button>
+              <button type="submit" className="button primary small" disabled={!keyDraft.trim()}>
+                Save key
+              </button>
+            </div>
+            <p className="hint">
+              <Icon name="lock" size={12} /> Stays in this browser. Sent only to Google.
             </p>
-          )}
-        </form>
-        <button type="button" className="button danger" onClick={forget} disabled={!apiKey}>
-          <Icon name="trash" /> Forget key
-        </button>
-        <details className="fine-print">
-          <summary>What Google receives</summary>
-          <p>
-            Your story (for scenes) and each scene’s description (for frames), along with your key. Requests are sent
-            with <code>store: false</code>, so Google does not keep them for later retrieval in your project. Google’s
-            terms still apply: on the free tier, Google may use prompts and responses to improve its products. Scripto
-            itself has no analytics, cookies or trackers.
-          </p>
-        </details>
+            {keyMessage && (
+              <p className="hint strong" role="status">
+                {keyMessage}
+              </p>
+            )}
+            {apiKey && (
+              <div className="key-saved">
+                <span>
+                  <Icon name="check" size={12} /> Saved: <code>{maskApiKey(apiKey)}</code>
+                </span>
+                <button type="button" className="text-link danger-text" onClick={onForgetKey}>
+                  Forget key
+                </button>
+              </div>
+            )}
+          </form>
+        </>
+      ) : (
+        <div className="drawer-hero">
+          <span className="label-mono violet">
+            On Zibby
+          </span>
+          <span className="two-tone small">
+            No key. <span className="bright">Credits.</span>
+          </span>
+          <span className="hint">Each run shows an estimate first and its exact charge after.</span>
+        </div>
+      )}
+
+      <section className="drawer-section" aria-label="Frames">
+        <Switch
+          label="Draw frames after the scenes"
+          checked={settings.generateImages}
+          onChange={(value) => {
+            apply({ generateImages: value });
+          }}
+        />
+        <Switch
+          label="Match every frame to the first"
+          checked={settings.useStyleReference}
+          onChange={(value) => {
+            apply({ useStyleReference: value });
+          }}
+        />
       </section>
 
-      <form className="dialog-section" onSubmit={submitSettings} aria-labelledby={`${id}-models`}>
-        <h3 id={`${id}-models`}>
-          <Icon name="sparkle" /> Models
-        </h3>
-        <div className="field">
-          <label htmlFor={`${id}-text-model`}>Text model (writes the scenes)</label>
-          <input
-            id={`${id}-text-model`}
-            list={`${id}-text-models`}
-            value={draft.textModel}
-            onChange={(e) => {
-              update('textModel', e.target.value);
-            }}
-            spellCheck={false}
-            autoCapitalize="off"
-            aria-describedby={`${id}-text-model-help`}
-          />
-          <datalist id={`${id}-text-models`}>
-            {TEXT_MODEL_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.note}
-              </option>
-            ))}
-          </datalist>
-          <p id={`${id}-text-model-help`} className="help">
-            {TEXT_MODEL_OPTIONS.find((o) => o.id === draft.textModel)?.note ??
-              'Any Gemini model ID that supports structured JSON output.'}
-          </p>
-        </div>
-
-        <div className="field">
-          <label htmlFor={`${id}-thinking`}>Thinking level</label>
-          <select
-            id={`${id}-thinking`}
-            value={draft.thinkingLevel}
-            onChange={(e) => {
-              update('thinkingLevel', e.target.value as ThinkingLevel);
-            }}
-            aria-describedby={`${id}-thinking-help`}
-          >
-            {THINKING_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {THINKING_LABELS[level]}
-              </option>
-            ))}
-          </select>
-          <p id={`${id}-thinking-help`} className="help">
-            Less thinking is faster and cheaper. gemini-3.8-flash accepts low, medium and high; the Flash-Lite models
-            also accept minimal.
-          </p>
-        </div>
-
-        <fieldset className="field">
-          <legend>Frames</legend>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={draft.generateImages}
-              onChange={(e) => {
-                update('generateImages', e.target.checked);
-              }}
-            />
-            Generate an image for each scene
-          </label>
-          <p className="help">
-            Gemini image models need a paid-tier key: about US$0.03 to US$0.13 per frame depending on the model, at
-            Google’s October 2026 list prices. With images off, Scripto draws placeholder frames.
-          </p>
-        </fieldset>
-
-        <div className="field">
-          <label htmlFor={`${id}-image-model`}>Image model</label>
-          <input
-            id={`${id}-image-model`}
-            list={`${id}-image-models`}
-            value={draft.imageModel}
-            onChange={(e) => {
-              update('imageModel', e.target.value);
-            }}
-            spellCheck={false}
-            autoCapitalize="off"
-            disabled={!draft.generateImages}
-            aria-describedby={`${id}-image-model-help`}
-          />
-          <datalist id={`${id}-image-models`}>
-            {IMAGE_MODEL_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.note}
-              </option>
-            ))}
-          </datalist>
-          <p id={`${id}-image-model-help`} className="help">
-            {IMAGE_MODEL_OPTIONS.find((o) => o.id === draft.imageModel)?.note ??
-              'Any Gemini model that can output images.'}
-          </p>
-        </div>
-
-        <div className="field-row">
+      {host === 'zibby' ? (
+        <section className="drawer-section fields" aria-label="Models">
           <div className="field">
-            <label htmlFor={`${id}-size`}>Image size</label>
+            <label htmlFor={`${id}-z-text`}>Scenes</label>
             <select
-              id={`${id}-size`}
-              value={draft.imageSize}
-              disabled={!draft.generateImages}
+              id={`${id}-z-text`}
+              value={settings.textModel}
               onChange={(e) => {
-                update('imageSize', e.target.value as ImageSize);
+                apply({ textModel: e.target.value });
               }}
             >
-              {IMAGE_SIZES.map((size) => (
-                <option key={size} value={size}>
-                  {size}
+              {ZIBBY_TEXT_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <p className="hint">{zibbyText?.note}</p>
+          </div>
+          {!settings.textModel.startsWith('claude-haiku-4') && (
+            <div className="field">
+              <label htmlFor={`${id}-z-think`}>Thinking</label>
+              <select
+                id={`${id}-z-think`}
+                value={settings.thinkingLevel}
+                onChange={(e) => {
+                  apply({ thinkingLevel: e.target.value as ThinkingLevel });
+                }}
+              >
+                {(['low', 'medium', 'high'] as const).map((level) => (
+                  <option key={level} value={level}>
+                    {THINKING_LABELS[level]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor={`${id}-z-image`}>Frames</label>
+            <select
+              id={`${id}-z-image`}
+              value={settings.imageModel}
+              onChange={(e) => {
+                apply({ imageModel: e.target.value });
+              }}
+            >
+              {ZIBBY_IMAGE_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
                 </option>
               ))}
             </select>
           </div>
-          <label className="check field">
-            <input
-              type="checkbox"
-              checked={draft.useStyleReference}
-              disabled={!draft.generateImages}
-              onChange={(e) => {
-                update('useStyleReference', e.target.checked);
-              }}
-            />
-            Match every frame to the first one’s style
-          </label>
-        </div>
-
-        {modelError && (
-          <p className="help error" role="alert">
-            {modelError}
-          </p>
-        )}
-        <div className="dialog-actions">
-          <button
-            type="button"
-            className="button ghost"
-            onClick={() => {
-              setDraft({ ...DEFAULT_SETTINGS });
-              setSaved(false);
-            }}
-          >
-            Reset to defaults
-          </button>
-          <span className="spacer" />
-          {saved && (
-            <span className="saved" role="status">
-              <Icon name="check" size={16} /> Saved
-            </span>
-          )}
-          <button type="submit" className="button primary">
-            Save settings
-          </button>
-        </div>
-      </form>
+        </section>
+      ) : (
+        <details className="drawer-section models">
+          <summary>Models</summary>
+          <form className="fields" onSubmit={submitModels}>
+            <div className="field">
+              <label htmlFor={`${id}-text-model`}>Text model</label>
+              <input
+                id={`${id}-text-model`}
+                list={`${id}-text-models`}
+                value={draft.textModel}
+                onChange={(e) => {
+                  update('textModel', e.target.value);
+                }}
+                spellCheck={false}
+                autoCapitalize="off"
+              />
+              <datalist id={`${id}-text-models`}>
+                {TEXT_MODEL_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.note}
+                  </option>
+                ))}
+              </datalist>
+            </div>
+            <div className="field">
+              <label htmlFor={`${id}-thinking`}>Thinking level</label>
+              <select
+                id={`${id}-thinking`}
+                value={draft.thinkingLevel}
+                onChange={(e) => {
+                  update('thinkingLevel', e.target.value as ThinkingLevel);
+                }}
+              >
+                {THINKING_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {THINKING_LABELS[level]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor={`${id}-image-model`}>Image model</label>
+              <input
+                id={`${id}-image-model`}
+                list={`${id}-image-models`}
+                value={draft.imageModel}
+                onChange={(e) => {
+                  update('imageModel', e.target.value);
+                }}
+                spellCheck={false}
+                autoCapitalize="off"
+              />
+              <datalist id={`${id}-image-models`}>
+                {IMAGE_MODEL_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.note}
+                  </option>
+                ))}
+              </datalist>
+            </div>
+            <div className="field">
+              <label htmlFor={`${id}-size`}>Image size</label>
+              <select
+                id={`${id}-size`}
+                value={draft.imageSize}
+                onChange={(e) => {
+                  update('imageSize', e.target.value as ImageSize);
+                }}
+              >
+                {IMAGE_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {modelError && (
+              <p className="hint error" role="alert">
+                {modelError}
+              </p>
+            )}
+            <div className="drawer-actions">
+              <button
+                type="button"
+                className="button ghost small"
+                onClick={() => {
+                  setDraft(defaultSettings(host));
+                  setSaved(false);
+                }}
+              >
+                Reset
+              </button>
+              <span className="spacer" />
+              {saved && (
+                <span className="hint" role="status">
+                  <Icon name="check" size={12} /> Saved
+                </span>
+              )}
+              <button type="submit" className="button primary small">
+                Save models
+              </button>
+            </div>
+          </form>
+        </details>
+      )}
     </dialog>
   );
 }

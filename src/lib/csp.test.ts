@@ -1,4 +1,4 @@
-import { buildCsp, CSP_DIRECTIVES, GOOGLE_API_ORIGIN } from './csp';
+import { buildCsp, CSP_DIRECTIVES, cspDirectives, GOOGLE_API_ORIGIN } from './csp';
 
 describe('content security policy', () => {
   it('only lets the page talk to itself and the Gemini API', () => {
@@ -16,5 +16,10 @@ describe('content security policy', () => {
   it('names no third-party origin other than Google', () => {
     const origins = buildCsp().match(/https?:\/\/[^\s;]+/g) ?? [];
     expect(new Set(origins)).toEqual(new Set([GOOGLE_API_ORIGIN]));
+  });
+
+  it('lets the Zibby build talk to its own origin only', () => {
+    expect(cspDirectives('zibby')['connect-src']).toEqual(["'self'"]);
+    expect(buildCsp(cspDirectives('zibby'))).not.toMatch(/https?:\/\//);
   });
 });

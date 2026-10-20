@@ -82,16 +82,31 @@ export function computeLayout(sceneCount: number): ExportLayout {
 }
 
 const FONT_STACK =
-  "system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Arabic', 'Geeza Pro', Tahoma, sans-serif";
+  "'Geist Variable', Geist, 'Readex Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', 'Geeza Pro', Tahoma, sans-serif";
+const MONO_STACK = "'Courier Prime', 'Readex Pro', 'Courier New', ui-monospace, monospace";
+const QUOTE_STACK = "'Playfair Display', 'Readex Pro', Georgia, serif";
 
+/** The same ground, ink and violet as the app, so a shared PNG looks like Scripto. */
 const COLORS = {
-  page: '#faf9f6',
-  card: '#ffffff',
-  border: '#dedcd5',
-  ink: '#1c1b19',
-  ink2: '#55534e',
-  muted: '#77756f',
+  page: '#09090b',
+  card: '#0d0d10',
+  border: 'rgba(255, 255, 255, 0.09)',
+  ink: '#fafafa',
+  ink2: '#a1a1aa',
+  muted: '#8a8a93',
+  accent: '#c4b5fd',
 };
+
+/** Canvas text only uses web fonts that are already loaded. */
+async function loadFonts(): Promise<void> {
+  const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+  if (!fonts || typeof fonts.load !== 'function') return;
+  await Promise.allSettled([
+    fonts.load(`700 44px ${MONO_STACK}`),
+    fonts.load(`400 18px ${FONT_STACK}`),
+    fonts.load(`italic 400 18px ${QUOTE_STACK}`),
+  ]);
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -122,6 +137,7 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
 }
 
 export async function renderStoryboardPng(storyboard: Storyboard): Promise<Blob> {
+  await loadFonts();
   const layout = computeLayout(storyboard.scenes.length);
   const canvas = document.createElement('canvas');
   canvas.width = layout.width;
@@ -142,7 +158,7 @@ export async function renderStoryboardPng(storyboard: Storyboard): Promise<Blob>
 
   // Header
   ctx.fillStyle = COLORS.ink;
-  ctx.font = `700 44px ${FONT_STACK}`;
+  ctx.font = `400 44px ${MONO_STACK}`;
   ctx.fillText(storyboard.title, textX(layout.margin, fullWidth), layout.margin, fullWidth);
   if (storyboard.logline) {
     ctx.fillStyle = COLORS.ink2;
@@ -189,14 +205,18 @@ export async function renderStoryboardPng(storyboard: Storyboard): Promise<Blob>
     const tx = textX(x + pad, innerW);
     let ty = y + layout.frameHeight + 16;
 
-    ctx.fillStyle = COLORS.ink;
-    ctx.font = `700 24px ${FONT_STACK}`;
     const number = String(i + 1).padStart(2, '0');
-    ctx.fillText(`${number} · ${scene.title}`, tx, ty, innerW);
+    ctx.fillStyle = COLORS.accent;
+    ctx.font = `700 20px ${MONO_STACK}`;
+    const numberWidth = ctx.measureText(`${number}  `).width;
+    ctx.fillText(`${number}  `, tx, ty + 2, innerW);
+    ctx.fillStyle = COLORS.ink;
+    ctx.font = `500 23px ${FONT_STACK}`;
+    ctx.fillText(scene.title, rtl ? tx - numberWidth : tx + numberWidth, ty, innerW - numberWidth);
     ty += 34;
 
     ctx.fillStyle = COLORS.muted;
-    ctx.font = `600 16px ${FONT_STACK}`;
+    ctx.font = `400 15px ${MONO_STACK}`;
     ctx.fillText(
       `${SHOT_LABELS[scene.shot]} · ${MOOD_INFO[scene.mood].label} · ${scene.intensity}/5`,
       tx,
@@ -216,7 +236,7 @@ export async function renderStoryboardPng(storyboard: Storyboard): Promise<Blob>
 
     if (scene.line) {
       ctx.fillStyle = COLORS.ink;
-      ctx.font = `italic 400 18px ${FONT_STACK}`;
+      ctx.font = `italic 400 18px ${QUOTE_STACK}`;
       const said = formatLine(scene, rtl);
       const remaining = Math.max(1, Math.floor((y + layout.frameHeight + layout.textHeight - 14 - ty) / 25));
       for (const line of clampLines(wrapText(said, innerW, measure), Math.min(3, remaining), measure, innerW)) {
@@ -225,6 +245,12 @@ export async function renderStoryboardPng(storyboard: Storyboard): Promise<Blob>
       }
     }
   });
+
+  ctx.fillStyle = COLORS.muted;
+  ctx.font = `400 15px ${MONO_STACK}`;
+  ctx.direction = 'ltr';
+  ctx.textAlign = 'right';
+  ctx.fillText('Made with Scripto', layout.width - layout.margin, layout.height - layout.margin + 18);
 
   return new Promise<Blob>((resolve, reject) => {
     try {

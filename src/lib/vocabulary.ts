@@ -2,21 +2,27 @@ import { MOODS, SHOTS, type Mood, type Shot } from './types';
 
 export interface MoodInfo {
   label: string;
-  /** Two gradient stops for placeholder frames (dark to light). */
+  /** Two stops for placeholder frames: a deep tint of the ground, then the mood's own colour. */
   gradient: readonly [string, string];
-  /** Accent used for chips and the mood chart; readable on light and dark. */
+  /** The mood's colour in the arc, chips and frames. All eight stay inside the violet family. */
   accent: string;
 }
 
+/**
+ * Moods share Scripto's violet palette: the hue moves a little (periwinkle,
+ * lavender, orchid, magenta) and lightness carries most of the difference, so
+ * the arc reads as one family. Mood is always named in text too, never by
+ * colour alone.
+ */
 export const MOOD_INFO: Record<Mood, MoodInfo> = {
-  joyful: { label: 'Joyful', gradient: ['#b45309', '#fcd34d'], accent: '#d97706' },
-  hopeful: { label: 'Hopeful', gradient: ['#0f766e', '#99f6e4'], accent: '#0d9488' },
-  calm: { label: 'Calm', gradient: ['#1e3a8a', '#93c5fd'], accent: '#3b82f6' },
-  romantic: { label: 'Romantic', gradient: ['#9d174d', '#fbcfe8'], accent: '#db2777' },
-  mysterious: { label: 'Mysterious', gradient: ['#1e1b4b', '#818cf8'], accent: '#6366f1' },
-  tense: { label: 'Tense', gradient: ['#450a0a', '#f87171'], accent: '#dc2626' },
-  melancholic: { label: 'Melancholic', gradient: ['#1f2937', '#9ca3af'], accent: '#6b7280' },
-  dramatic: { label: 'Dramatic', gradient: ['#3b0764', '#f97316'], accent: '#9333ea' },
+  joyful: { label: 'Joyful', gradient: ['#221c33', '#f5edff'], accent: '#f5edff' },
+  hopeful: { label: 'Hopeful', gradient: ['#1f1933', '#d9c6ff'], accent: '#d9c6ff' },
+  calm: { label: 'Calm', gradient: ['#161a2e', '#a9b6f5'], accent: '#a9b6f5' },
+  romantic: { label: 'Romantic', gradient: ['#26152b', '#e8a9ee'], accent: '#e8a9ee' },
+  mysterious: { label: 'Mysterious', gradient: ['#1a1530', '#9f86f2'], accent: '#9f86f2' },
+  tense: { label: 'Tense', gradient: ['#25122b', '#d46be0'], accent: '#d46be0' },
+  melancholic: { label: 'Melancholic', gradient: ['#17161f', '#7e7a9c'], accent: '#7e7a9c' },
+  dramatic: { label: 'Dramatic', gradient: ['#170f2e', '#6a3bd8'], accent: '#6a3bd8' },
 };
 
 export const SHOT_LABELS: Record<Shot, string> = {

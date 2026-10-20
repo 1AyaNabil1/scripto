@@ -1,7 +1,6 @@
 import { useId, useState } from 'react';
-import { formatLine } from '../lib/format';
 import type { Scene } from '../lib/types';
-import { MOOD_INFO, SHOT_LABELS } from '../lib/vocabulary';
+import { MOOD_INFO } from '../lib/vocabulary';
 import type { EditableSceneFields, FrameStatus } from '../state/board';
 import { Frame } from './Frame';
 import { Icon } from './Icon';
@@ -20,16 +19,53 @@ interface Props {
   onSave: (sceneId: string, changes: Partial<EditableSceneFields>) => void;
 }
 
-export function SceneCard({ scene, index, rtl, lang, status, canGenerate, generateHint, onGenerate, onRemoveImage, onSave }: Props) {
+/** The voice under a line: the speaker, or "narration". */
+function voiceOf(scene: Pick<Scene, 'lineType' | 'speaker'>, rtl: boolean): string {
+  if (scene.lineType === 'dialogue' && scene.speaker) return scene.speaker;
+  return rtl ? 'الراوي' : 'Narration';
+}
+
+export function SceneCard(props: Props) {
+  const { scene, index, rtl, lang, status } = props;
   const [editing, setEditing] = useState(false);
   const id = useId();
-  const number = String(index + 1).padStart(2, '0');
   const loading = status?.state === 'loading';
   const mood = MOOD_INFO[scene.mood];
+  const quoteOpen = rtl ? '«' : '“';
+  const quoteClose = rtl ? '»' : '”';
+  const said = /^["“«]/.test(scene.line) ? scene.line : `${quoteOpen}${scene.line}${quoteClose}`;
+
+  const actions = (
+    <>
+      <button
+        type="button"
+        className="frame-button"
+        onClick={() => {
+          setEditing(true);
+        }}
+        aria-label={`Edit scene ${index + 1}`}
+        title="Edit"
+      >
+        <Icon name="edit" size={12} />
+      </button>
+      <button
+        type="button"
+        className="frame-button"
+        onClick={() => {
+          props.onGenerate(scene.id);
+        }}
+        disabled={!props.canGenerate || loading}
+        aria-label={`${scene.image ? 'Regenerate' : 'Generate'} frame for scene ${index + 1}`}
+        title={props.canGenerate ? (scene.image ? 'Redraw' : 'Draw') : props.generateHint}
+      >
+        <Icon name={scene.image ? 'refresh' : 'image'} size={12} />
+      </button>
+    </>
+  );
 
   return (
     <article className="scene-card" aria-labelledby={`${id}-title`}>
-      <Frame scene={scene} index={index} status={status} />
+      <Frame scene={scene} index={index} status={status} actions={editing ? undefined : actions} />
       <div className="scene-body" dir={rtl ? 'rtl' : 'ltr'} lang={lang}>
         {editing ? (
           <SceneEditor
@@ -37,106 +73,43 @@ export function SceneCard({ scene, index, rtl, lang, status, canGenerate, genera
             onCancel={() => {
               setEditing(false);
             }}
+            onRemoveImage={
+              scene.image
+                ? () => {
+                    props.onRemoveImage(scene.id);
+                  }
+                : undefined
+            }
             onSave={(changes) => {
-              onSave(scene.id, changes);
+              props.onSave(scene.id, changes);
               setEditing(false);
             }}
           />
         ) : (
           <>
-            <p className="eyebrow" lang="en" dir="ltr">
-              Scene {number}
-            </p>
-            <h3 id={`${id}-title`} className="scene-title" dir="auto">
-              {scene.title}
-            </h3>
-            <ul className="chips" aria-label="Shot and mood" lang="en">
-              <li className="chip" dir="ltr">
-                {SHOT_LABELS[scene.shot]}
-              </li>
-              <li className="chip" dir="ltr">
-                <span className={`swatch mood-${scene.mood}`} aria-hidden="true" />
+            <div className="scene-head">
+              <h3 id={`${id}-title`} className="scene-title" dir="auto">
+                {scene.title}
+              </h3>
+              <span className="mood-tag" lang="en" dir="ltr">
+                <span className="mood-dot" style={{ background: mood.accent }} aria-hidden="true" />
                 {mood.label}
-              </li>
-              <li className="chip" dir="ltr" title="Emotional intensity">
-                Intensity {scene.intensity}/5
-              </li>
-            </ul>
+              </span>
+            </div>
+            {scene.line && (
+              <p className="scene-line" dir="auto">
+                <span className="quote">{said}</span>
+                <span className="voice"> — {voiceOf(scene, rtl)}</span>
+              </p>
+            )}
             {scene.description && (
               <p className="scene-description" dir="auto">
                 {scene.description}
               </p>
             )}
-            <dl className="scene-meta">
-              {scene.characters.length > 0 && (
-                <div>
-                  <dt lang="en" dir="ltr">
-                    Characters:
-                  </dt>
-                  <dd dir="auto">{scene.characters.join(rtl ? '، ' : ', ')}</dd>
-                </div>
-              )}
-              {scene.setting && (
-                <div>
-                  <dt lang="en" dir="ltr">
-                    Setting:
-                  </dt>
-                  <dd dir="auto">{scene.setting}</dd>
-                </div>
-              )}
-            </dl>
-            {scene.line && (
-              <blockquote className={`scene-line ${scene.lineType}`} dir="auto">
-                {scene.lineType === 'narration' && (
-                  <span className="line-label" lang="en">
-                    Narration
-                  </span>
-                )}
-                {formatLine(scene, rtl)}
-              </blockquote>
-            )}
           </>
         )}
       </div>
-      {!editing && (
-        <div className="scene-actions" lang="en" dir="ltr">
-          <button
-            type="button"
-            className="button small ghost"
-            onClick={() => {
-              setEditing(true);
-            }}
-            aria-label={`Edit scene ${index + 1}`}
-          >
-            <Icon name="edit" size={16} /> Edit
-          </button>
-          <button
-            type="button"
-            className="button small ghost"
-            onClick={() => {
-              onGenerate(scene.id);
-            }}
-            disabled={!canGenerate || loading}
-            title={canGenerate ? undefined : generateHint}
-            aria-label={`${scene.image ? 'Regenerate' : 'Generate'} frame for scene ${index + 1}`}
-          >
-            <Icon name={scene.image ? 'refresh' : 'image'} size={16} /> {scene.image ? 'Regenerate' : 'Generate'} frame
-          </button>
-          {scene.image && (
-            <button
-              type="button"
-              className="button small ghost"
-              onClick={() => {
-                onRemoveImage(scene.id);
-              }}
-              disabled={loading}
-              aria-label={`Use placeholder for scene ${index + 1}`}
-            >
-              <Icon name="trash" size={16} /> Placeholder
-            </button>
-          )}
-        </div>
-      )}
     </article>
   );
 }

@@ -1,6 +1,6 @@
 import { storyboardJson } from '../test/fetchMocks';
 import { ScriptoError } from './errors';
-import { extractJson, normalizeScene, normalizeStoryboardData, parseStoryboardText } from './validate';
+import { extractJson, normalizeScene, normalizeStoryboardData, parseStoryboardText, sluglineFromSetting } from './validate';
 
 function kindOf(fn: () => unknown): string | undefined {
   try {
@@ -137,5 +137,17 @@ describe('normalizeScene', () => {
   it('skips non-objects and scenes without any description', () => {
     expect(normalizeScene(null, 0).scene).toBeUndefined();
     expect(normalizeScene({ title: 'Only a title' }, 0).scene).toBeUndefined();
+  });
+});
+
+describe('scene headings', () => {
+  it('keeps the model\'s slugline', () => {
+    const { scene } = normalizeScene({ description: 'x', slugline: 'EXT. PIER — DAWN', setting: 'A pier' }, 0);
+    expect(scene?.slugline).toBe('EXT. PIER — DAWN');
+  });
+
+  it('derives one from the setting when it is missing, as in older files', () => {
+    expect(normalizeScene({ description: 'x', setting: 'a rainy street, evening' }, 0).scene?.slugline).toBe('A RAINY STREET');
+    expect(sluglineFromSetting('')).toBe('');
   });
 });

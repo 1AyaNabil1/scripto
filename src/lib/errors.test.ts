@@ -52,7 +52,12 @@ describe('errorFromHttp', () => {
 describe('toFriendlyError', () => {
   it('gives a title and message for Scripto errors', () => {
     const friendly = toFriendlyError(new ScriptoError('quota', 'Slow down.', { detail: 'limit' }));
-    expect(friendly).toEqual({ title: 'Quota reached', message: 'Slow down.', detail: 'limit' });
+    expect(friendly).toEqual({ title: 'Quota reached', message: 'Slow down.', detail: 'limit', kind: 'quota', requestId: undefined });
+  });
+
+  it('carries the kind and request id the UI offers a way out of', () => {
+    const friendly = toFriendlyError(new ScriptoError('credits', 'Top up.', { requestId: 'req_1' }));
+    expect(friendly).toMatchObject({ title: 'Not enough credits', kind: 'credits', requestId: 'req_1' });
   });
 
   it('wraps unknown errors without leaking keys', () => {

@@ -131,3 +131,11 @@ describe('local persistence', () => {
     expect(loadDraft()).toBe('');
   });
 });
+
+describe('saving with frames', () => {
+  it('reports that frames cannot be kept when the browser has no IndexedDB', async () => {
+    const { saveStoryboardWithFrames, loadStoryboardWithFrames } = await import('./persist');
+    expect(await saveStoryboardWithFrames(null)).toBe(false);
+    expect(await loadStoryboardWithFrames()).toBeNull();
+  });
+});

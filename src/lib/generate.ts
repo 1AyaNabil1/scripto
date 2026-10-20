@@ -1,16 +1,10 @@
-/** Story → storyboard → frames, on top of the Interactions API client. */
+/** Story → storyboard → frames, on top of either backend (your own Gemini key, or Zibby). */
+import { createGeminiBackend, type AiBackend, type CallContext } from './backend';
 import { redact, ScriptoError, type ErrorKind } from './errors';
 import { resolveDirection } from './direction';
-import {
-  createInteraction,
-  extractImage,
-  extractText,
-  fromDataUrl,
-  toDataUrl,
-  type ExtractedImage,
-} from './gemini';
+import { fromDataUrl, toDataUrl, type ExtractedImage } from './gemini';
 import { makeId } from './ids';
-import { buildImagePrompt, buildImageRequest, buildStoryboardRequest } from './prompts';
+import { buildImagePrompt } from './prompts';
 import { sceneRange } from './schema';
 import type { Settings } from './settings';
 import { getStyle } from './styles';
@@ -23,10 +17,17 @@ import {
 } from './types';
 import { parseStoryboardText } from './validate';
 
-interface ApiAccess {
-  apiKey: string;
-  signal?: AbortSignal | undefined;
+interface ApiAccess extends Omit<CallContext, 'capAck'> {
+  /** Where requests go. Defaults to Gemini with `apiKey`. */
+  backend?: AiBackend | undefined;
+  apiKey?: string;
   fetchImpl?: typeof fetch;
+  /** Resend past Zibby's spending cap: applies to the first request only. */
+  capAck?: boolean | undefined;
+}
+
+function backendFor(access: ApiAccess): AiBackend {
+  return access.backend ?? createGeminiBackend({ apiKey: access.apiKey ?? '', fetchImpl: access.fetchImpl });
 }
 
 export function validateStoryInput(story: string): void {
@@ -50,24 +51,20 @@ export async function generateStoryboard(
 ): Promise<{ storyboard: Storyboard; warnings: string[] }> {
   validateStoryInput(params.story);
   const style = getStyle(params.styleId);
-  const request = buildStoryboardRequest({
+  const backend = backendFor(params);
+  const { text: answer } = await backend.writeStoryboard({
     story: params.story,
     sceneCount: params.sceneCount,
     style,
-    model: params.settings.textModel,
-    thinkingLevel: params.settings.thinkingLevel,
-  });
-  const interaction = await createInteraction(request, {
-    apiKey: params.apiKey,
-    purpose: 'text',
+    settings: params.settings,
     signal: params.signal,
-    ...(params.fetchImpl ? { fetchImpl: params.fetchImpl } : {}),
+    capAck: params.capAck,
+    onCharge: params.onCharge,
   });
-  const answer = extractText(interaction);
   if (!answer.trim()) {
     throw new ScriptoError(
       'bad-response',
-      'The model returned no text. This can happen when a story trips Google’s safety filters; try rewording it, or try again.',
+      'The model returned no text. This can happen when a story trips the safety filters; try rewording it, or try again.',
     );
   }
   const parsed = parseStoryboardText(answer, { expected: sceneRange(params.sceneCount) });
@@ -81,7 +78,7 @@ export async function generateStoryboard(
     styleId: style.id,
     characters: parsed.characters,
     scenes: parsed.scenes,
-    source: 'gemini',
+    source: backend.kind,
     createdAt: new Date().toISOString(),
     story: params.story.trim(),
   };
@@ -108,25 +105,20 @@ export async function generateFrame(
     style: getStyle(storyboard.styleId),
     hasReference: Boolean(params.reference),
   });
-  const request = buildImageRequest({
+  const { image, text } = await backendFor(params).drawFrame({
     prompt,
-    model: params.settings.imageModel,
-    imageSize: params.settings.imageSize,
     reference: params.reference,
-  });
-  const interaction = await createInteraction(request, {
-    apiKey: params.apiKey,
-    purpose: 'image',
+    settings: params.settings,
     signal: params.signal,
-    ...(params.fetchImpl ? { fetchImpl: params.fetchImpl } : {}),
+    capAck: params.capAck,
+    onCharge: params.onCharge,
   });
-  const image = extractImage(interaction);
   if (!image) {
-    const said = extractText(interaction).trim();
+    const said = text.trim();
     throw new ScriptoError(
       'no-image',
       'The image model did not return a picture for this scene. It may have been held back by safety filters; try editing the scene and regenerating.',
-      { detail: said ? redact(said, [params.apiKey]) : undefined },
+      { detail: said ? redact(said, params.apiKey ? [params.apiKey] : []) : undefined },
     );
   }
   return {
@@ -145,6 +137,10 @@ const FATAL_KINDS: ReadonlySet<ErrorKind> = new Set([
   'quota',
   'model-not-found',
   'aborted',
+  'credits',
+  'cap',
+  'signed-out',
+  'locked',
 ]);
 
 export function isFatalForBatch(error: unknown): boolean {
@@ -192,6 +188,7 @@ export async function generateFrames(
         .find(Boolean)
     : undefined;
   let reference: ExtractedImage | undefined = existingReference;
+  let capAck = params.capAck ?? false;
 
   const runOne = async (sceneId: string): Promise<void> => {
     if (stopped || params.signal?.aborted) {
@@ -200,8 +197,10 @@ export async function generateFrames(
       return;
     }
     params.onStart?.(sceneId);
+    const ack = capAck;
+    capAck = false;
     try {
-      const image = await generateFrame({ ...params, sceneId, reference });
+      const image = await generateFrame({ ...params, sceneId, reference, capAck: ack });
       result.done += 1;
       params.onDone?.(sceneId, image);
       if (params.settings.useStyleReference && !reference) reference = fromDataUrl(image.src);

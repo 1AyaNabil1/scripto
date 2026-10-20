@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "Scripto",
+  "summary": "Turn a short story into a storyboard: scenes with camera shots and moods, a screenplay, an emotional arc, and a drawn frame for every moment. Any language, Arabic included.",
+  "build": {
+    "env": {
+      "VITE_SCRIPTO_HOST": "zibby"
+    }
+  }
+}
