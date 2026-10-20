@@ -61,6 +61,8 @@ describe('first visit', () => {
     expect(screen.getByRole('button', { name: /the clockmaker of lantern street/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /the last lighthouse/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /share yours here/i })).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: 'AyaNexus' })).toHaveAttribute('href', 'https://ayanabil.vercel.app');
+    expect(screen.getByRole('link', { name: 'Source on GitHub' })).toHaveAttribute('href', 'https://github.com/1AyaNabil1/scripto');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

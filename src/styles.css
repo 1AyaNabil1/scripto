@@ -2284,6 +2284,7 @@ main {
 
 .footer {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 14px;
   padding: 24px var(--gutter) 26px;
@@ -2291,8 +2292,30 @@ main {
   color: var(--faint);
 }
 
-.footer a {
+.footer-name {
+  color: var(--violet-text);
+  text-decoration: none;
+}
+
+.footer-name:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer-github {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
   color: var(--faint);
+}
+
+.footer-github:hover {
+  color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.26);
 }
 
 /* ---------- Small screens ---------- */
