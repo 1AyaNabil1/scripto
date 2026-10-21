@@ -410,6 +410,17 @@ describe('on Zibby', () => {
     expect(impl.topUp).toHaveBeenCalled();
   });
 
+  it('has no link that leaves the app’s frame', async () => {
+    const { backend } = zibbyBackend();
+    const user = userEvent.setup();
+    const { container } = render(<App impl={zibbyImpl()} backend={backend} />);
+    expect(screen.getByText(/Built by/)).toHaveTextContent('Built by AyaNexus 🦢');
+    await openDemo(user, /the clockmaker of lantern street/i);
+    await user.click(tab('Story'));
+    const outward = [...container.querySelectorAll('a[href]')].filter((a) => /^https?:/i.test(a.getAttribute('href') ?? ''));
+    expect(outward).toEqual([]);
+  });
+
   it('shows no prices to a visitor whose runs are on Zibby', () => {
     const { backend } = zibbyBackend();
     render(<App impl={zibbyImpl({ useComped: () => true })} backend={backend} />);

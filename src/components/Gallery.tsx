@@ -11,10 +11,12 @@ interface Props {
   onPick: (demoId: string) => void;
   /** Leave out the "share yours" card (the empty board shows a short gallery). */
   compact?: boolean;
+  /** The "share yours" card links to GitHub; on Zibby nothing may leave the app's frame. */
+  share?: boolean;
 }
 
 /** "Made with Scripto": the bundled boards, opened in one click. */
-export function Gallery({ onPick, compact = false }: Props) {
+export function Gallery({ onPick, compact = false, share = true }: Props) {
   return (
     <ul className={`gallery${compact ? ' compact' : ''}`}>
       {DEMO_ENTRIES.map((demo) => (
@@ -52,7 +54,7 @@ export function Gallery({ onPick, compact = false }: Props) {
           </button>
         </li>
       ))}
-      {!compact && (
+      {!compact && share && (
         <li>
           <a className="gallery-share" href={SHARE_URL} target="_blank" rel="noreferrer noopener">
             <span className="share-plus" aria-hidden="true">

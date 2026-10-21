@@ -32,6 +32,8 @@ interface Props {
   onGenerate: () => void;
   onCancel: () => void;
   onPickDemo: (id: string) => void;
+  /** False on Zibby, where no link may leave the app's frame. */
+  linksOut: boolean;
 }
 
 const COUNTS: SceneCountChoice[] = ['auto', ...Array.from({ length: MAX_SCENES - MIN_SCENES + 1 }, (_, i) => MIN_SCENES + i)];
@@ -246,7 +248,7 @@ export function StoryTab(props: Props) {
           </h2>
           <span className="label-mono">Open any board</span>
         </div>
-        <Gallery onPick={props.onPickDemo} />
+        <Gallery onPick={props.onPickDemo} share={props.linksOut} />
       </div>
 
       <div className="section">
