@@ -2,8 +2,8 @@
 
 **Your story. Every frame.** Paste a short story and Scripto splits it into scenes, each with a camera shot, a mood, the characters and setting, a screenplay heading and a line of dialogue or narration. Then it draws a frame for every scene in one consistent look.
 
-**Live:** https://moviconexus.me/scripto/
-(open a sample directly: [English](https://moviconexus.me/scripto/?demo=clockmaker) · [Arabic, right to left](https://moviconexus.me/scripto/?demo=bottle) · [Noir](https://moviconexus.me/scripto/?demo=lighthouse))
+**Live:** https://1ayanabil1.github.io/scripto/
+(open a sample directly: [English](https://1ayanabil1.github.io/scripto/?demo=clockmaker) · [Arabic, right to left](https://1ayanabil1.github.io/scripto/?demo=bottle) · [Noir](https://1ayanabil1.github.io/scripto/?demo=lighthouse))
 
 Scripto runs in two places from one codebase. On the free site, anyone can write scenes with no key and no sign-up. On [Zibby](https://zibby.run), visitors pay per run in credits and every frame is drawn.
 
